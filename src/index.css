@@ -1,0 +1,116 @@
+@import "tailwindcss";
+
+/* ===== GeneChat Design Tokens ===== */
+
+:root {
+  --bg-deep: #0b0d12;
+  --bg-primary: #10131a;
+  --bg-secondary: #171a24;
+  --bg-tertiary: #1e2230;
+  --bg-hover: #242838;
+  --bg-active: #2a2f42;
+  --border: #2a2e40;
+  --border-subtle: #1f2234;
+  --border-accent: #00d4aa;
+  --text-primary: #e4e6ee;
+  --text-secondary: #8e92a6;
+  --text-muted: #585c72;
+  --accent: #00d4aa;
+  --accent-dim: #00a888;
+  --accent-hover: #00e6b8;
+  --accent-subtle: rgba(0, 212, 170, 0.06);
+  --bg-glass: var(--bg-secondary);
+  --base-a: #4ade80;
+  --base-t: #f87171;
+  --base-g: #facc15;
+  --base-c: #60a5fa;
+  --green: #4ade80;
+  --blue: #60a5fa;
+  --purple: #a78bfa;
+  --rose: #fb7185;
+  --amber: #fbbf24;
+  --cyan: #22d3ee;
+  --danger-bg: rgba(248,113,113,0.12);
+  --danger-text: #f87171;
+  --danger-border: rgba(248,113,113,0.25);
+  --sidebar-width: 240px;
+  --panel-width: 420px;
+  --drawer-height: 320px;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  --font-sans: 'DM Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: 'Instrument Serif', Georgia, serif;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.3);
+  --shadow-lg: 0 4px 16px rgba(0,0,0,0.35);
+  color-scheme: dark;
+}
+
+[data-theme="light"] {
+  --bg-deep: #f7f7f8;
+  --bg-primary: #ffffff;
+  --bg-secondary: #f0f0f2;
+  --bg-tertiary: #e8e8ec;
+  --bg-hover: #eaeaee;
+  --bg-active: #e2e2e8;
+  --border: #d4d4dc;
+  --border-subtle: #e6e6ec;
+  --border-accent: #009e7e;
+  --text-primary: #1a1a2e;
+  --text-secondary: #52526a;
+  --text-muted: #9090a6;
+  --accent: #009e7e;
+  --accent-dim: #008068;
+  --accent-hover: #00b892;
+  --accent-subtle: rgba(0,158,126,0.05);
+  --bg-glass: var(--bg-secondary);
+  --danger-bg: rgba(220,38,38,0.08);
+  --danger-text: #dc2626;
+  --danger-border: rgba(220,38,38,0.2);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.07);
+  --shadow-lg: 0 4px 16px rgba(0,0,0,0.09);
+  color-scheme: light;
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html, body, #root { height: 100%; overflow: hidden; }
+
+body {
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+.font-mono { font-family: var(--font-mono); }
+.font-display { font-family: var(--font-display); }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+@keyframes slideDown {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(0); }
+}
+@keyframes notifySlideIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes notifySlideOut {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-8px); }
+}
