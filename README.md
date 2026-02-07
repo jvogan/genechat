@@ -45,7 +45,16 @@ Needleman-Wunsch pairwise alignment with color-coded identity/mismatch display, 
 
 ### AI Assistant
 
-Bring-your-own-key chat drawer supporting Claude, GPT, Gemini, and Kimi. The assistant sees your workspace context and can create blocks, add features, modify sequences, rename blocks, and highlight regions. Click the key icon in the AI drawer to add your API key — keys are stored locally in your browser and never sent to any server.
+Bring-your-own-key chat drawer supporting Claude, GPT, Gemini, and Kimi. The assistant sees your workspace context and can create blocks, add features, modify sequences, rename blocks, and highlight regions.
+
+Click the key icon in the AI drawer to configure a provider. Get an API key from any supported provider:
+
+- [Anthropic (Claude)](https://console.anthropic.com/)
+- [OpenAI](https://platform.openai.com/api-keys)
+- [Google (Gemini)](https://aistudio.google.com/apikey)
+- [Moonshot (Kimi)](https://platform.moonshot.cn/)
+
+> **Your keys never leave your browser.** They are stored in IndexedDB on your machine — no server, no `.env` file, nothing to accidentally commit. GeneChat has no backend and sends API requests directly from your browser to the provider.
 
 <p align="center"><img src="docs/assets/ai-chat.png" width="720" alt="AI assistant" /></p>
 
