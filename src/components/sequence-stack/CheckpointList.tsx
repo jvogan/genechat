@@ -73,6 +73,8 @@ export default function CheckpointList({ blockId, currentLength, onClose }: Chec
           }}
           onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-secondary)'; }}
           onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-muted)'; }}
+          aria-label="Close checkpoints"
+          title="Close checkpoints"
         >
           <X size={12} />
         </button>
@@ -147,6 +149,7 @@ export default function CheckpointList({ blockId, currentLength, onClose }: Chec
                   onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--accent-subtle)'; }}
                   onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; }}
                   title="Restore this checkpoint"
+                  aria-label="Restore this checkpoint"
                 >
                   <RotateCcw size={12} />
                 </button>
@@ -165,6 +168,7 @@ export default function CheckpointList({ blockId, currentLength, onClose }: Chec
                   onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--rose)'; }}
                   onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-muted)'; }}
                   title="Delete this checkpoint"
+                  aria-label="Delete this checkpoint"
                 >
                   <X size={11} />
                 </button>

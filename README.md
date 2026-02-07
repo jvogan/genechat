@@ -1,59 +1,103 @@
-# GeneChat
+<p align="center">
+  <img src="https://raw.githubusercontent.com/jvogan/genechat/main/public/logo.svg" width="280" alt="GeneChat" />
+</p>
 
-Open-source, browser-based bioinformatics workbench — restriction digest, ligation, primer design, sequence diff, AI assistant, and more. No server required.
+<p align="center">
+  <strong>A browser-based bioinformatics workbench for DNA, RNA, and protein analysis.</strong>
+</p>
 
-A desktop-class sequence analysis tool for DNA/RNA/protein, built with React + TypeScript.
+<p align="center">
+  <a href="https://github.com/jvogan/genechat/actions/workflows/ci.yml"><img src="https://github.com/jvogan/genechat/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT" /></a>
+  <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white" alt="TypeScript" /></a>
+  <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" alt="React" /></a>
+</p>
 
-## What it does
+GeneChat is an open-source sequence analysis tool that runs entirely in your browser. Import GenBank or FASTA files, design primers, run restriction digests, ligate fragments, align sequences, and annotate features — all without sending data to a server. An optional AI assistant (bring your own API key) understands your workspace and can create or modify sequences on your behalf.
 
-- **Sequence workspace**: Paste, import, or create sequences. Each conversation holds a stack of sequence blocks with full manipulation tools (reverse complement, translate, codon optimize, auto-annotate).
-- **Cloning operations**: Restriction digest with 25 enzymes (unique-cutter filter, proportional fragment preview), ligation with linker support, and primer design with Tm/GC tuning and restriction-site tail presets.
-- **Sequence diff**: Needleman-Wunsch alignment between any two blocks with color-coded identity/mismatch display.
-- **Sequence search**: IUPAC-aware motif search (Cmd+F) with match highlighting and prev/next navigation.
-- **Block stats**: Per-block metrics — length, GC%, molecular weight, melting temperature, ORF count.
-- **Selection actions**: Select bases to copy, extract to a new block, create a feature, or view stats.
-- **Per-block checkpoints**: Save and restore sequence snapshots with labeled history.
-- **Drag-to-reorder**: Grip handle on each block for pointer-based reordering.
-- **URL deep linking**: Share conversations via `?conv=<id>` query parameters.
-- **AI assistant**: Bring-your-own-key chat drawer supporting Claude, GPT, Gemini, and Kimi. Streams responses with workspace context. AI can create blocks, add features, modify sequences, and highlight regions.
-- **Visualization**: Interactive circular (plasmid) and linear maps with features, restriction sites, and zoom/pan. Canvas2D rendering at 60fps.
-- **File I/O**: Import FASTA and GenBank files (drag-drop or click). Export per-block or per-conversation.
-- **Project folders**: Organize conversations into folders. Right-click to move, rename, delete.
-- **Persistence**: All data saved to IndexedDB via Dexie.js. Survives page reloads.
-- **Theming**: Light (default) and dark themes via CSS custom properties.
+<p align="center">
+  <img src="docs/assets/genechat-demo.gif" width="720" alt="GeneChat demo" />
+</p>
 
-## Tech stack
+## Features
 
-React 18, TypeScript, Vite, Tailwind CSS 4, Zustand, Dexie.js, Canvas2D, lucide-react
+### Sequence Workspace
 
-## Development
+Always-editable DNA, RNA, and protein blocks with inline mutation tracking, feature annotations, per-block stats (length, GC%, MW, Tm, ORF count), checkpoints, and drag-to-reorder. Import FASTA and GenBank files via drag-and-drop. Export per-block or per-conversation.
 
-**Prerequisites:** Node 20+
+<p align="center"><img src="docs/assets/hero-light.png" width="720" alt="Sequence workspace" /></p>
+
+### Cloning Operations
+
+Restriction digest with 25 built-in enzymes (unique-cutter filter, proportional fragment preview), ligation with linker support, and primer design with Tm/GC tuning and restriction-site tail presets (EcoRI, BamHI, HindIII, NcoI, XhoI, NdeI).
+
+<p align="center"><img src="docs/assets/restriction-digest.png" width="720" alt="Restriction digest" /></p>
+
+### Sequence Analysis
+
+Needleman-Wunsch pairwise alignment with color-coded identity/mismatch display, IUPAC-aware motif search (Cmd+F) with match highlighting and navigation, reading frame translation (+1/+2/+3), and selection actions (copy, extract, annotate, stats).
+
+<p align="center"><img src="docs/assets/sequence-diff.png" width="720" alt="Sequence diff" /></p>
+
+### AI Assistant
+
+Bring-your-own-key chat drawer supporting Claude, GPT, Gemini, and Kimi. The assistant sees your workspace context and can create blocks, add features, modify sequences, rename blocks, and highlight regions.
+
+<p align="center"><img src="docs/assets/ai-chat.png" width="720" alt="AI assistant" /></p>
+
+## Quick Start
 
 ```bash
+git clone https://github.com/jvogan/genechat.git
+cd genechat
 npm install
-npm run dev     # http://localhost:5180 (falls back to 5181+ if busy)
+npm run dev
 ```
 
-```bash
-npx tsc --noEmit   # type check
-npm run lint        # ESLint
-npm test            # unit tests
-npm run build       # production build
-```
+Open [http://localhost:5180](http://localhost:5180)
 
-## Project structure
+## Commands
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start dev server (port 5180) |
+| `npm run build` | Production build |
+| `npm run lint` | Lint with ESLint |
+| `npm run test` | Run unit tests |
+| `npm run test:e2e` | Run Playwright E2E tests |
+
+<details>
+<summary>Project Structure</summary>
 
 ```
 src/
-  ai/              # AI provider implementations (Claude, GPT, Gemini, Kimi)
-  bio/             # Core bioinformatics: parsers, transforms, analysis
-  canvas/          # Canvas2D renderers (plasmid, linear, base-level)
-  components/      # React UI (sidebar, sequence-stack, viz-panel, ai-drawer)
-  hooks/           # Custom hooks (analysis, feature sync, canvas, AI chat)
-  persistence/     # Dexie.js IndexedDB schema + Zustand sync
-  store/           # Zustand stores (project, sequence, UI, AI state)
+  ai/           # AI provider implementations (Claude, GPT, Gemini, Kimi)
+  bio/          # Pure bioinformatics functions (parsers, transforms, analysis)
+  canvas/       # Canvas2D renderers (plasmid map, linear map)
+  components/   # React UI (sidebar, sequence stack, AI drawer, dialogs)
+  hooks/        # Custom hooks (analysis, feature sync, AI chat)
+  persistence/  # Dexie.js IndexedDB schema and Zustand sync
+  store/        # Zustand stores (project, sequence, UI, AI state)
+e2e/            # Playwright end-to-end tests
 ```
+
+</details>
+
+## Built With
+
+[React](https://react.dev/) &middot; [TypeScript](https://www.typescriptlang.org/) &middot; [Vite](https://vite.dev/) &middot; [Tailwind CSS](https://tailwindcss.com/) &middot; [Zustand](https://zustand.docs.pmnd.rs/) &middot; [Dexie.js](https://dexie.org/) &middot; [Playwright](https://playwright.dev/)
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for release history.
+
+## Security
+
+See [SECURITY.md](SECURITY.md) for reporting vulnerabilities.
 
 ## License
 

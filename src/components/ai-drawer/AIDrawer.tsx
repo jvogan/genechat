@@ -1,6 +1,8 @@
 import { useRef, useCallback, useState } from 'react';
+import { Trash2 } from 'lucide-react';
 import { useUIStore } from '../../store/ui-store';
 import { useAIStore } from '../../store/ai-store';
+import { useSequenceStore } from '../../store/sequence-store';
 import { AI_MODELS } from '../../store/types';
 import { ChatMessages } from './ChatMessages';
 import { ChatInput } from './ChatInput';
@@ -11,6 +13,13 @@ export function AIDrawer() {
   const setDrawerHeight = useUIStore((s) => s.setAiDrawerHeight);
   const toggleDrawer = useUIStore((s) => s.toggleDrawer);
   const activeModel = useAIStore((s) => s.activeModel);
+  const messageCount = useAIStore((s) => s.chatMessages.length);
+  const activeConversationId = useUIStore((s) => s.activeConversationId);
+  const activeBlockId = useUIStore((s) => s.activeSequenceBlockId);
+  const selectedRange = useUIStore((s) => s.selectedRange);
+  const blocks = useSequenceStore((s) => s.blocks);
+  const convBlockCount = blocks.filter(b => b.conversationId === activeConversationId).length;
+  const activeBlockName = blocks.find(b => b.id === activeBlockId)?.name;
   const [, setIsDragging] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const dragStartY = useRef(0);
@@ -104,6 +113,27 @@ export function AIDrawer() {
           {modelLabel}
         </span>
 
+        <span style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', opacity: 0.7 }}>
+          {activeBlockName ? `Context: ${activeBlockName}` : `Context: ${convBlockCount} blocks`}
+          {selectedRange ? ` \u00b7 ${selectedRange.end - selectedRange.start}bp sel` : ''}
+        </span>
+
+        {/* Clear chat */}
+        {messageCount > 0 && (
+          <button
+            onClick={(e) => { e.stopPropagation(); useAIStore.getState().clearChat(); }}
+            onMouseDown={(e) => e.stopPropagation()}
+            style={{
+              position: 'absolute', right: 60, background: 'none', border: 'none',
+              color: 'var(--text-muted)', cursor: 'pointer', fontSize: 14, padding: '2px 6px', borderRadius: 4,
+            }}
+            title="Clear chat history"
+            aria-label="Clear chat history"
+          >
+            <Trash2 size={12} />
+          </button>
+        )}
+
         {/* Settings gear */}
         <button
           onClick={(e) => {
@@ -123,6 +153,7 @@ export function AIDrawer() {
             borderRadius: 4,
           }}
           title="API Key Settings"
+          aria-label="API Key Settings"
         >
           &#9881;
         </button>
@@ -145,6 +176,8 @@ export function AIDrawer() {
             padding: '2px 6px',
             borderRadius: 4,
           }}
+          aria-label="Close AI drawer"
+          title="Close AI drawer"
         >
           x
         </button>

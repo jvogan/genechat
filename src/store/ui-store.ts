@@ -1,17 +1,14 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
-import type { UIState, Theme, PanelView } from './types';
+import type { UIState, Theme } from './types';
 
 interface UIActions {
   toggleSidebar(): void;
-  togglePanel(): void;
   toggleDrawer(): void;
   setTheme(theme: Theme): void;
   toggleTheme(): void;
   setSidebarWidth(w: number): void;
-  setPanelWidth(w: number): void;
   setAiDrawerHeight(h: number): void;
-  setPanelView(view: PanelView): void;
   setActiveConversation(id: string | null): void;
   selectSequenceBlock(id: string | null): void;
   selectFeature(id: string | null, source: 'workspace' | 'map' | null): void;
@@ -31,6 +28,10 @@ interface UIActions {
   closeSequenceSearch(): void;
   setSequenceSearchQuery(query: string): void;
   setSequenceSearchMatchIndex(index: number): void;
+  toggleShortcutLegend(): void;
+  toggleBlockSelection(id: string): void;
+  clearBlockSelection(): void;
+  selectAllBlocks(ids: string[]): void;
 }
 
 export type UIStore = UIState & UIActions;
@@ -40,9 +41,6 @@ export const useUIStore = create<UIStore>()(subscribeWithSelector((set) => ({
   theme: 'light',
   sidebarOpen: true,
   sidebarWidth: 240,
-  panelOpen: false,
-  panelWidth: 420,
-  panelView: 'plasmid',
   aiDrawerOpen: false,
   aiDrawerHeight: 320,
   activeConversationId: null,
@@ -63,18 +61,17 @@ export const useUIStore = create<UIStore>()(subscribeWithSelector((set) => ({
   sequenceSearchOpen: false,
   sequenceSearchQuery: '',
   sequenceSearchMatchIndex: 0,
+  shortcutLegendOpen: false,
+  selectedBlockIds: new Set<string>(),
 
   // Actions
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
-  togglePanel: () => set((s) => ({ panelOpen: !s.panelOpen })),
   toggleDrawer: () => set((s) => ({ aiDrawerOpen: !s.aiDrawerOpen })),
   setTheme: (theme) => set({ theme }),
   toggleTheme: () => set((s) => ({ theme: s.theme === 'dark' ? 'light' : 'dark' })),
   setSidebarWidth: (sidebarWidth) => set({ sidebarWidth }),
-  setPanelWidth: (panelWidth) => set({ panelWidth }),
   setAiDrawerHeight: (aiDrawerHeight) => set({ aiDrawerHeight }),
-  setPanelView: (panelView) => set({ panelView }),
-  setActiveConversation: (id) => set({ activeConversationId: id, activeSequenceBlockId: null, editingBlockId: null }),
+  setActiveConversation: (id) => set({ activeConversationId: id, activeSequenceBlockId: null, editingBlockId: null, selectedBlockIds: new Set<string>() }),
   selectSequenceBlock: (id) => set((s) => ({
     activeSequenceBlockId: id,
     selectedRange: id !== s.activeSequenceBlockId ? null : s.selectedRange,
@@ -97,9 +94,17 @@ export const useUIStore = create<UIStore>()(subscribeWithSelector((set) => ({
   closeSequenceSearch: () => set({ sequenceSearchOpen: false, sequenceSearchQuery: '', sequenceSearchMatchIndex: 0 }),
   setSequenceSearchQuery: (sequenceSearchQuery) => set({ sequenceSearchQuery, sequenceSearchMatchIndex: 0 }),
   setSequenceSearchMatchIndex: (sequenceSearchMatchIndex) => set({ sequenceSearchMatchIndex }),
+  toggleShortcutLegend: () => set((s) => ({ shortcutLegendOpen: !s.shortcutLegendOpen })),
   toggleBlockLock: (blockId) => set((s) => {
     const next = new Set(s.lockedBlockIds);
     if (next.has(blockId)) next.delete(blockId); else next.add(blockId);
     return { lockedBlockIds: next };
   }),
+  toggleBlockSelection: (id) => set((s) => {
+    const next = new Set(s.selectedBlockIds);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return { selectedBlockIds: next };
+  }),
+  clearBlockSelection: () => set({ selectedBlockIds: new Set<string>() }),
+  selectAllBlocks: (ids) => set({ selectedBlockIds: new Set(ids) }),
 })));

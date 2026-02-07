@@ -23,7 +23,11 @@ import SequenceNotes from './SequenceNotes';
 import FeatureSelector from './FeatureSelector';
 import FeatureAnnotationTrack from './FeatureAnnotationTrack';
 import FeatureEditor from './FeatureEditor';
-import type { SequenceType, Feature, ManipulationType } from '../../bio/types';
+import FeatureTemplateDropdown from './FeatureTemplateDropdown';
+import type { FeatureTemplate } from '../../constants/feature-templates';
+import GCPlot from './GCPlot';
+import ORFTrack from './ORFTrack';
+import type { SequenceType, Feature, ManipulationType, ORF } from '../../bio/types';
 import type { MutationScar } from '../../store/types';
 import { exportToFasta, exportToGenBank, downloadFile } from '../../persistence/export';
 import type { SequenceBlock as SequenceBlockType } from '../../store/types';
@@ -53,6 +57,7 @@ interface SequenceBlockProps {
   onNameChange?: (name: string) => void;
   onAction?: (type: ManipulationType) => void;
   onDelete?: () => void;
+  onDuplicate?: () => void;
   onNavigateToParent?: (blockId: string) => void;
   onAddFeature?: (feature: Feature) => void;
   onUpdateFeature?: (featureId: string, updates: Partial<Feature>) => void;
@@ -106,6 +111,7 @@ export default function SequenceBlock({
   onNameChange,
   onAction,
   onDelete,
+  onDuplicate,
   onNavigateToParent,
   onAddFeature,
   onUpdateFeature,
@@ -123,13 +129,14 @@ export default function SequenceBlock({
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [featureEditorOpen, setFeatureEditorOpen] = useState(false);
   const [editingFeature, setEditingFeature] = useState<Feature | null>(null);
+  const [templatePreset, setTemplatePreset] = useState<FeatureTemplate | null>(null);
   const [checkpointListOpen, setCheckpointListOpen] = useState(false);
   const confirmTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
 
   // Reset delete confirmation when menu closes + cleanup timer
   useEffect(() => {
-    if (!menuOpen) setConfirmingDelete(false);
+    if (!menuOpen) setConfirmingDelete(false); // eslint-disable-line react-hooks/set-state-in-effect -- cleanup side-state when parent menu closes
   }, [menuOpen]);
   useEffect(() => {
     return () => { if (confirmTimer.current) clearTimeout(confirmTimer.current); };
@@ -142,6 +149,7 @@ export default function SequenceBlock({
   const isLocked = useUIStore((s) => s.lockedBlockIds.has(id));
   const toggleBlockLock = useUIStore((s) => s.toggleBlockLock);
   const checkpointCount = useCheckpointStore((s) => s.checkpoints.filter((c) => c.blockId === id).length);
+  const isMultiSelected = useUIStore((s) => s.selectedBlockIds.has(id));
   const searchOpen = useUIStore((s) => s.sequenceSearchOpen);
   const searchQuery = useUIStore((s) => s.sequenceSearchQuery);
   const searchMatchIndex = useUIStore((s) => s.sequenceSearchMatchIndex);
@@ -232,6 +240,7 @@ export default function SequenceBlock({
 
   return (
     <div
+      data-testid="sequence-block"
       style={{
         borderRadius: 'var(--radius-md)',
         borderTop: '1px solid var(--border)',
@@ -257,6 +266,7 @@ export default function SequenceBlock({
         <div
           data-drag-handle="true"
           style={{
+            position: 'relative',
             color: 'var(--text-muted)',
             cursor: 'grab',
             padding: 2,
@@ -269,12 +279,23 @@ export default function SequenceBlock({
           onPointerDown={(e) => { (e.currentTarget as HTMLElement).style.cursor = 'grabbing'; }}
           onPointerUp={(e) => { (e.currentTarget as HTMLElement).style.cursor = 'grab'; }}
         >
+          {isMultiSelected && (
+            <div style={{
+              position: 'absolute', top: -2, left: -2, width: 14, height: 14,
+              borderRadius: '50%', background: 'var(--accent)', display: 'flex',
+              alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Check size={9} style={{ color: 'white' }} />
+            </div>
+          )}
           <GripVertical size={14} />
         </div>
 
         {/* Expand toggle */}
         <button
           onClick={() => setExpanded(v => !v)}
+          aria-label={expanded ? 'Collapse block' : 'Expand block'}
+          title={expanded ? 'Collapse block' : 'Expand block'}
           style={{
             background: 'none',
             border: 'none',
@@ -312,6 +333,7 @@ export default function SequenceBlock({
           />
         ) : (
           <span
+            data-testid="block-name"
             onDoubleClick={() => setEditing(true)}
             style={{
               flex: 1,
@@ -400,6 +422,7 @@ export default function SequenceBlock({
             transition: 'background 0.12s, color 0.12s',
           }}
           title={isLocked ? 'Unlock editing' : 'Lock editing'}
+          aria-label={isLocked ? 'Unlock editing' : 'Lock editing'}
           onMouseEnter={e => { if (!isLocked) e.currentTarget.style.color = 'var(--text-secondary)'; }}
           onMouseLeave={e => { if (!isLocked) e.currentTarget.style.color = 'var(--text-muted)'; }}
         >
@@ -421,6 +444,7 @@ export default function SequenceBlock({
               transition: 'background 0.12s',
             }}
             title="More actions"
+            aria-label="More actions"
           >
             <MoreHorizontal size={15} />
           </button>
@@ -628,6 +652,33 @@ export default function SequenceBlock({
                   <History size={13} />
                   Checkpoints ({checkpointCount})
                 </button>
+                {onDuplicate && (
+                  <button
+                    onClick={() => {
+                      setMenuOpen(false);
+                      onDuplicate();
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      width: '100%',
+                      padding: '8px 12px',
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--text-secondary)',
+                      fontSize: 12,
+                      fontFamily: 'var(--font-sans)',
+                      cursor: 'pointer',
+                      textAlign: 'left' as const,
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-hover)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
+                  >
+                    <Copy size={13} />
+                    Duplicate
+                  </button>
+                )}
                 {onDelete && (
                   <button
                     onClick={() => {
@@ -688,6 +739,7 @@ export default function SequenceBlock({
               disabled={!canUndo}
               style={tinyBtnStyle(!canUndo)}
               title="Undo (Cmd+Z)"
+              aria-label="Undo"
               onMouseEnter={e => { if (canUndo) e.currentTarget.style.background = 'var(--bg-hover)'; }}
               onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
             >
@@ -698,6 +750,7 @@ export default function SequenceBlock({
               disabled={!canRedo}
               style={tinyBtnStyle(!canRedo)}
               title="Redo (Cmd+Shift+Z)"
+              aria-label="Redo"
               onMouseEnter={e => { if (canRedo) e.currentTarget.style.background = 'var(--bg-hover)'; }}
               onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
             >
@@ -747,7 +800,10 @@ export default function SequenceBlock({
         )}
 
         {/* Block stats row */}
-        <BlockStatsRow raw={raw} type={type} />
+        <BlockStatsRow raw={raw} type={type} selectedRange={isActive ? selectedRange : null} />
+
+        {/* GC content sparkline */}
+        <GCPlot raw={raw} type={type} />
 
         {/* Feature annotation track */}
         {features.length > 0 && (
@@ -755,6 +811,16 @@ export default function SequenceBlock({
             features={features}
             totalLength={raw.length}
             onFeatureClick={(featureId) => selectFeature(featureId, 'workspace')}
+          />
+        )}
+
+        {/* ORF visualization track */}
+        {(type === 'dna' || type === 'rna') && (
+          <ORFTrack
+            raw={raw}
+            type={type}
+            totalLength={raw.length}
+            onORFClick={(orf: ORF) => setSelectedRange({ start: orf.start, end: orf.end })}
           />
         )}
 
@@ -802,7 +868,7 @@ export default function SequenceBlock({
           )}
           {isActive && (
             <button
-              onClick={() => { setEditingFeature(null); setFeatureEditorOpen(true); }}
+              onClick={() => { setEditingFeature(null); setTemplatePreset(null); setFeatureEditorOpen(true); }}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -824,6 +890,15 @@ export default function SequenceBlock({
               + Feature
             </button>
           )}
+          {isActive && (
+            <FeatureTemplateDropdown
+              onSelect={(tmpl) => {
+                setTemplatePreset(tmpl);
+                setEditingFeature(null);
+                setFeatureEditorOpen(true);
+              }}
+            />
+          )}
         </div>
 
         {/* Feature editor modal */}
@@ -832,6 +907,7 @@ export default function SequenceBlock({
             sequenceLength={raw.length}
             feature={editingFeature}
             initialRange={!editingFeature ? selectedRange : null}
+            template={!editingFeature ? templatePreset : null}
             onSave={(f) => {
               if (editingFeature) {
                 onUpdateFeature?.(f.id, f);
@@ -840,13 +916,14 @@ export default function SequenceBlock({
               }
               setFeatureEditorOpen(false);
               setEditingFeature(null);
+              setTemplatePreset(null);
             }}
             onDelete={editingFeature ? () => {
               onRemoveFeature?.(editingFeature.id);
               setFeatureEditorOpen(false);
               setEditingFeature(null);
             } : undefined}
-            onClose={() => { setFeatureEditorOpen(false); setEditingFeature(null); }}
+            onClose={() => { setFeatureEditorOpen(false); setEditingFeature(null); setTemplatePreset(null); }}
           />
         )}
 

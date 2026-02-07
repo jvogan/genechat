@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { Copy, Check, Scissors, Tag, BarChart3 } from 'lucide-react';
 import type { SequenceType } from '../../bio/types';
 import { gcContent, meltingTemperature, molecularWeight, proteinMolecularWeight } from '../../bio/gc-content';
+import { reverseComplement } from '../../bio';
 
 interface SelectionActionBarProps {
   raw: string;
@@ -19,6 +20,7 @@ export default function SelectionActionBar({
   onAddFeature,
 }: SelectionActionBarProps) {
   const [copied, setCopied] = useState(false);
+  const [rcCopied, setRcCopied] = useState(false);
   const [showStats, setShowStats] = useState(false);
 
   const substring = raw.slice(selectedRange.start, selectedRange.end);
@@ -110,6 +112,29 @@ export default function SelectionActionBar({
         {copied ? <Check size={12} style={{ color: 'var(--accent)' }} /> : <Copy size={12} />}
         {copied ? 'Copied' : 'Copy'}
       </button>
+
+      {isNucleotide && (
+        <button
+          onClick={() => {
+            const rc = reverseComplement(substring, type === 'rna');
+            navigator.clipboard.writeText(rc);
+            setRcCopied(true);
+            setTimeout(() => setRcCopied(false), 1500);
+          }}
+          style={{
+            ...btnStyle,
+            fontWeight: 700,
+            fontSize: 10,
+            letterSpacing: 0.5,
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-hover)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; }}
+          title="Copy reverse complement"
+        >
+          {rcCopied ? <Check size={12} style={{ color: 'var(--accent)' }} /> : null}
+          {rcCopied ? 'RC copied' : 'RC'}
+        </button>
+      )}
 
       <button
         onClick={onExtract}

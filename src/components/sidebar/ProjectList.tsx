@@ -187,6 +187,7 @@ export default function ProjectList({
                   setExpanded((prev) => ({ ...prev, [p.id]: true }));
                 }}
                 title="New chat in project"
+                aria-label="New chat in project"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -216,6 +217,8 @@ export default function ProjectList({
                   e.stopPropagation();
                   setMenuOpenId(isMenuOpen ? null : p.id);
                 }}
+                aria-label="Project options"
+                title="Project options"
                 style={{
                   display: 'flex',
                   alignItems: 'center',

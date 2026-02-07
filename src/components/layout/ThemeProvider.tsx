@@ -12,6 +12,7 @@ const ThemeContext = createContext<ThemeContextValue>({
   toggleTheme: () => {},
 });
 
+// eslint-disable-next-line react-refresh/only-export-components -- co-located hook for ThemeContext; not worth a separate file
 export function useTheme() {
   return useContext(ThemeContext);
 }

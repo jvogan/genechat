@@ -84,6 +84,8 @@ export function useAIChat() {
 
       setStreaming(true);
       let accumulated = '';
+      const abortCtrl = new AbortController();
+      useAIStore.getState().setAbortController(abortCtrl);
 
       try {
         await provider.sendMessage(
@@ -95,6 +97,7 @@ export function useAIChat() {
               updateLastAssistantMessage(accumulated);
             }
           },
+          abortCtrl.signal,
         );
 
         // Parse and execute workspace actions from the response
@@ -108,11 +111,16 @@ export function useAIChat() {
           updateLastAssistantMessage(cleanText + '\n\n' + summary);
         }
       } catch (err) {
-        const errorMsg =
-          err instanceof Error ? err.message : 'Unknown error occurred';
-        updateLastAssistantMessage(`Error: ${errorMsg}`);
+        if (err instanceof DOMException && err.name === 'AbortError') {
+          // User stopped generation — keep partial content
+        } else {
+          const errorMsg =
+            err instanceof Error ? err.message : 'Unknown error occurred';
+          updateLastAssistantMessage(`Error: ${errorMsg}`);
+        }
       } finally {
         setStreaming(false);
+        useAIStore.getState().setAbortController(null);
       }
     },
     [

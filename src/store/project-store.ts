@@ -16,6 +16,7 @@ interface ProjectActions {
   moveConversation(conversationId: string, toProjectId: string | null): void;
   getConversation(id: string): Conversation | undefined;
   getProjectConversations(projectId: string): Conversation[];
+  restoreConversation(conv: Conversation): void;
 }
 
 export type ProjectStore = ProjectState & ProjectActions;
@@ -196,5 +197,18 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 
   getProjectConversations(projectId) {
     return get().conversations.filter((c) => c.projectId === projectId);
+  },
+
+  restoreConversation(conv) {
+    set((s) => ({
+      conversations: [...s.conversations, conv],
+      projects: conv.projectId
+        ? s.projects.map((p) =>
+            p.id === conv.projectId
+              ? { ...p, conversationIds: [...p.conversationIds, conv.id], updatedAt: Date.now() }
+              : p,
+          )
+        : s.projects,
+    }));
   },
 }));

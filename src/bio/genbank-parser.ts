@@ -107,7 +107,7 @@ function parseFeatures(featuresText: string): Feature[] {
 
   for (const line of lines) {
     // Feature type line: exactly 5 spaces then a non-space
-    if (/^     \S/.test(line)) {
+    if (/^ {5}\S/.test(line)) {
       if (current) featureBlocks.push(current);
       current = line + '\n';
     } else if (current) {

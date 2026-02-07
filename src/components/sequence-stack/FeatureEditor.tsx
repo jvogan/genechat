@@ -6,6 +6,7 @@ interface FeatureEditorProps {
   sequenceLength: number;
   feature?: Feature | null;
   initialRange?: { start: number; end: number } | null;
+  template?: { name: string; type: FeatureType; color: string } | null;
   onSave: (feature: Feature) => void;
   onDelete?: () => void;
   onClose: () => void;
@@ -40,14 +41,15 @@ export default function FeatureEditor({
   sequenceLength,
   feature,
   initialRange,
+  template,
   onSave,
   onDelete,
   onClose,
 }: FeatureEditorProps) {
   const isEditing = !!feature;
 
-  const [name, setName] = useState(feature?.name ?? '');
-  const [type, setType] = useState<FeatureType>(feature?.type ?? 'misc_feature');
+  const [name, setName] = useState(feature?.name ?? template?.name ?? '');
+  const [type, setType] = useState<FeatureType>(feature?.type ?? template?.type ?? 'misc_feature');
   const [startDisplay, setStartDisplay] = useState(
     feature ? String(feature.start + 1) : initialRange ? String(initialRange.start + 1) : '1'
   );
@@ -56,13 +58,14 @@ export default function FeatureEditor({
   );
   const [strand, setStrand] = useState<1 | -1>(feature?.strand ?? 1);
   const [color, setColor] = useState(
-    feature?.color ?? TYPE_DEFAULT_COLORS['misc_feature']
+    feature?.color ?? template?.color ?? TYPE_DEFAULT_COLORS['misc_feature']
   );
 
   // When type changes (and we're adding, not editing), update color to type default
+  // Intentional derived-state reset when feature type changes
   useEffect(() => {
     if (!isEditing) {
-      setColor(TYPE_DEFAULT_COLORS[type] ?? '#a78bfa');
+      setColor(TYPE_DEFAULT_COLORS[type] ?? '#a78bfa'); // eslint-disable-line react-hooks/set-state-in-effect
     }
   }, [type, isEditing]);
 
@@ -180,6 +183,8 @@ export default function FeatureEditor({
           </span>
           <button
             onClick={onClose}
+            aria-label="Close feature editor"
+            title="Close feature editor"
             style={{
               background: 'none',
               border: 'none',

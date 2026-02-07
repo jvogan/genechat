@@ -1,5 +1,6 @@
-import { useState, useMemo, useCallback } from 'react';
-import { Plus, Dna, FolderPlus } from 'lucide-react';
+import { useState, useMemo, useCallback, useRef } from 'react';
+import { Plus, Dna, FolderPlus, X } from 'lucide-react';
+import type { Conversation } from '../../store/types';
 import ConversationList, { type ConversationItem } from './ConversationList';
 import ProjectList from './ProjectList';
 import SearchBar from './SearchBar';
@@ -25,6 +26,9 @@ export default function Sidebar() {
 
   const [creatingProject, setCreatingProject] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
+  const [deletedConversation, setDeletedConversation] = useState<Conversation | null>(null);
+  const convDeleteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const restoreConversation = useProjectStore((s) => s.restoreConversation);
 
   // Enhanced search: match conversation titles, block names, and feature names
   const conversationIdsWithBlockMatch = useMemo(() => {
@@ -49,13 +53,18 @@ export default function Sidebar() {
   const ungroupedItems: ConversationItem[] = useMemo(() => {
     const items = conversations
       .filter((c) => c.projectId === null)
-      .map((c) => ({ id: c.id, title: c.title }));
+      .map((c) => ({
+        id: c.id,
+        title: c.title,
+        blockCount: allBlocks.filter(b => b.conversationId === c.id).length,
+        updatedAt: c.updatedAt,
+      }));
     if (!searchQuery) return items;
     const q = searchQuery.toLowerCase();
     return items.filter((c) =>
       c.title.toLowerCase().includes(q) || conversationIdsWithBlockMatch.has(c.id)
     );
-  }, [conversations, searchQuery, conversationIdsWithBlockMatch]);
+  }, [conversations, searchQuery, conversationIdsWithBlockMatch, allBlocks]);
 
   const projectItems = useMemo(
     () =>
@@ -63,6 +72,8 @@ export default function Sidebar() {
         const convs = getProjectConversations(p.id).map((c) => ({
           id: c.id,
           title: c.title,
+          blockCount: allBlocks.filter(b => b.conversationId === c.id).length,
+          updatedAt: c.updatedAt,
         }));
         if (!searchQuery) return { id: p.id, name: p.name, color: p.color, conversations: convs };
         const q = searchQuery.toLowerCase();
@@ -71,7 +82,7 @@ export default function Sidebar() {
         );
         return { id: p.id, name: p.name, color: p.color, conversations: filtered };
       }),
-    [projects, getProjectConversations, searchQuery, conversationIdsWithBlockMatch],
+    [projects, getProjectConversations, searchQuery, conversationIdsWithBlockMatch, allBlocks],
   );
 
   const projectInfoForMenu = useMemo(
@@ -91,6 +102,20 @@ export default function Sidebar() {
     },
     [createConversation, setActiveConversation],
   );
+
+  const handleDeleteConversation = useCallback((convId: string) => {
+    const conv = conversations.find(c => c.id === convId);
+    if (!conv) return;
+    setDeletedConversation(conv);
+    deleteConversation(convId);
+    if (convDeleteTimer.current) clearTimeout(convDeleteTimer.current);
+    convDeleteTimer.current = setTimeout(() => setDeletedConversation(null), 5000);
+    // If we deleted the active conversation, select another
+    if (convId === activeConversationId) {
+      const remaining = conversations.filter(c => c.id !== convId);
+      if (remaining.length > 0) setActiveConversation(remaining[0].id);
+    }
+  }, [conversations, deleteConversation, activeConversationId, setActiveConversation]);
 
   function handleFinishCreateProject() {
     const trimmed = newProjectName.trim();
@@ -214,6 +239,57 @@ export default function Sidebar() {
       {/* Search */}
       <SearchBar value={searchQuery} onChange={setSearchQuery} />
 
+      {/* Conversation undo banner */}
+      {deletedConversation && (
+        <div style={{
+          margin: '0 6px 6px',
+          padding: '6px 10px',
+          borderRadius: 'var(--radius-md)',
+          background: 'var(--danger-bg)',
+          border: '1px solid var(--danger-border)',
+          color: 'var(--text-secondary)',
+          fontSize: 11,
+          fontWeight: 500,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          animation: 'notifySlideIn 0.25s ease',
+        }}>
+          <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            Deleted "{deletedConversation.title}"
+          </span>
+          <button
+            onClick={() => {
+              restoreConversation(deletedConversation);
+              setActiveConversation(deletedConversation.id);
+              setDeletedConversation(null);
+              if (convDeleteTimer.current) clearTimeout(convDeleteTimer.current);
+            }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 3,
+              background: 'none', border: '1px solid var(--danger-border)',
+              borderRadius: 'var(--radius-sm)', color: 'var(--danger-text)',
+              cursor: 'pointer', padding: '2px 6px', fontSize: 10,
+              fontWeight: 600, fontFamily: 'var(--font-sans)', flexShrink: 0,
+            }}
+          >
+            Undo
+          </button>
+          <button
+            onClick={() => { setDeletedConversation(null); if (convDeleteTimer.current) clearTimeout(convDeleteTimer.current); }}
+            style={{
+              background: 'none', border: 'none', color: 'var(--text-muted)',
+              cursor: 'pointer', padding: 2, display: 'flex', alignItems: 'center',
+              borderRadius: 2, flexShrink: 0,
+            }}
+            aria-label="Dismiss notification"
+            title="Dismiss notification"
+          >
+            <X size={12} />
+          </button>
+        </div>
+      )}
+
       {/* Scrollable area */}
       <div style={{ flex: 1, overflow: 'auto', padding: '0 6px' }}>
         {projectItems.length > 0 && (
@@ -232,7 +308,7 @@ export default function Sidebar() {
           onSelect={setActiveConversation}
           projects={projectInfoForMenu}
           onMoveToProject={moveConversation}
-          onDelete={deleteConversation}
+          onDelete={handleDeleteConversation}
         />
       </div>
     </div>

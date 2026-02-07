@@ -85,15 +85,10 @@ export interface BlockCheckpoint {
 
 // ===== UI State =====
 export type Theme = 'light' | 'dark';
-export type PanelView = 'plasmid' | 'linear';
-
 export interface UIState {
   theme: Theme;
   sidebarOpen: boolean;
   sidebarWidth: number;
-  panelOpen: boolean;
-  panelWidth: number;
-  panelView: PanelView;
   aiDrawerOpen: boolean;
   aiDrawerHeight: number;
   activeConversationId: string | null;
@@ -114,6 +109,8 @@ export interface UIState {
   sequenceSearchOpen: boolean;
   sequenceSearchQuery: string;
   sequenceSearchMatchIndex: number;
+  shortcutLegendOpen: boolean;
+  selectedBlockIds: Set<string>;
 }
 
 // ===== AI Actions =====

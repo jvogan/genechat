@@ -33,6 +33,7 @@ export default function UserProfile() {
           transition: 'color 0.12s',
         }}
         title="Settings"
+        aria-label="Settings"
       >
         <Settings size={15} />
       </button>

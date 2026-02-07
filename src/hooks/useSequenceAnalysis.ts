@@ -68,6 +68,8 @@ export function useSequenceAnalysis(raw: string): SequenceAnalysisResult {
   const [analysis, setAnalysis] = useState<SequenceAnalysis | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
+  // Core analysis driver; resets + runs detection on input change
+  /* eslint-disable react-hooks/set-state-in-effect -- this effect IS the analysis pipeline; setState drives the sequence type/analysis state machine */
   useEffect(() => {
     if (!raw || raw.trim().length === 0) {
       setType('unknown');
@@ -87,6 +89,7 @@ export function useSequenceAnalysis(raw: string): SequenceAnalysisResult {
 
     return () => clearTimeout(timer);
   }, [raw]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   return { type, analysis, isAnalyzing };
 }
