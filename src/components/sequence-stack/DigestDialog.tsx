@@ -174,6 +174,8 @@ export default function DigestDialog({
           </div>
           <button
             onClick={onClose}
+            aria-label="Close"
+            title="Close"
             style={{
               background: 'none',
               border: 'none',

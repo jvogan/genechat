@@ -231,6 +231,8 @@ export default function SequenceDiffView({
           </div>
           <button
             onClick={onClose}
+            aria-label="Close"
+            title="Close"
             style={{
               background: 'none',
               border: 'none',

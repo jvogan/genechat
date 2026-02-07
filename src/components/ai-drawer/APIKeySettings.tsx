@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { X } from 'lucide-react';
 import { useAIStore } from '../../store/ai-store';
 import { providerRegistry } from '../../ai/provider-registry';
 import type { AIProviderName } from '../../store/types';
@@ -69,17 +70,19 @@ export function APIKeySettings({ onClose }: APIKeySettingsProps) {
           <h2 style={{ fontSize: 18, fontWeight: 600, margin: 0 }}>API Key Settings</h2>
           <button
             onClick={onClose}
+            aria-label="Close"
+            title="Close"
             style={{
               background: 'none',
               border: 'none',
               color: 'var(--text-muted)',
               cursor: 'pointer',
-              fontSize: 18,
-              padding: '2px 8px',
+              padding: 4,
               borderRadius: 6,
+              display: 'flex',
             }}
           >
-            x
+            <X size={16} />
           </button>
         </div>
 
@@ -92,6 +95,7 @@ export function APIKeySettings({ onClose }: APIKeySettingsProps) {
           return (
             <div key={name} style={{ marginBottom: 16 }}>
               <label
+                htmlFor={`api-key-${name}`}
                 style={{
                   display: 'block',
                   fontSize: 12,
@@ -105,6 +109,7 @@ export function APIKeySettings({ onClose }: APIKeySettingsProps) {
               <div style={{ display: 'flex', gap: 6 }}>
                 <div style={{ flex: 1, position: 'relative' }}>
                   <input
+                    id={`api-key-${name}`}
                     type={visible[name] ? 'text' : 'password'}
                     value={apiKeys[name]}
                     onChange={(e) => setApiKey(name, e.target.value)}

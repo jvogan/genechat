@@ -33,6 +33,10 @@ Restriction digest with 25 built-in enzymes (unique-cutter filter, proportional 
 
 <p align="center"><img src="docs/assets/restriction-digest.png" width="720" alt="Restriction digest" /></p>
 
+<p align="center"><img src="docs/assets/ligation.png" width="720" alt="Ligation" /></p>
+
+<p align="center"><img src="docs/assets/primer-design.png" width="720" alt="Primer design" /></p>
+
 ### Sequence Analysis
 
 Needleman-Wunsch pairwise alignment with color-coded identity/mismatch display, IUPAC-aware motif search (Cmd+F) with match highlighting and navigation, reading frame translation (+1/+2/+3), and selection actions (copy, extract, annotate, stats).
@@ -72,9 +76,10 @@ Open [http://localhost:5180](http://localhost:5180)
 ```
 src/
   ai/           # AI provider implementations (Claude, GPT, Gemini, Kimi)
+  assets/       # Static assets
   bio/          # Pure bioinformatics functions (parsers, transforms, analysis)
-  canvas/       # Canvas2D renderers (plasmid map, linear map)
   components/   # React UI (sidebar, sequence stack, AI drawer, dialogs)
+  constants/    # Feature templates and configuration
   hooks/        # Custom hooks (analysis, feature sync, AI chat)
   persistence/  # Dexie.js IndexedDB schema and Zustand sync
   store/        # Zustand stores (project, sequence, UI, AI state)

@@ -158,6 +158,8 @@ export default function PrimerDesignDialog({
           </div>
           <button
             onClick={onClose}
+            aria-label="Close"
+            title="Close"
             style={{
               background: 'none',
               border: 'none',
