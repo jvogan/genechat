@@ -51,6 +51,8 @@ Bring-your-own-key chat drawer supporting Claude, GPT, Gemini, and Kimi. The ass
 
 ## Quick Start
 
+Requires [Node.js](https://nodejs.org/) 18 or later.
+
 ```bash
 git clone https://github.com/jvogan/genechat.git
 cd genechat
@@ -58,7 +60,7 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:5180](http://localhost:5180)
+Open [http://localhost:5180](http://localhost:5180) — works in Chrome, Firefox, Safari, and Edge.
 
 ## Commands
 
