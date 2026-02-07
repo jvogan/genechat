@@ -26,10 +26,13 @@ Please [open an issue](https://github.com/jvogan/genechat/issues/new?template=bu
 
 ## Development Setup
 
+Requires [Node.js](https://nodejs.org/) 18 or later.
+
 ```bash
 git clone https://github.com/jvogan/genechat.git
 cd genechat
 npm install
+npx playwright install chromium   # needed for E2E tests
 npm run dev
 ```
 

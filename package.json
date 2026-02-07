@@ -21,6 +21,9 @@
     "genbank",
     "fasta"
   ],
+  "engines": {
+    "node": ">=18"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",
