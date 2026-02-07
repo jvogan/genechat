@@ -1,4 +1,9 @@
-import { Dna } from 'lucide-react';
+import { Dna, Upload, Keyboard } from 'lucide-react';
+
+const hints = [
+  { icon: <Upload size={13} />, text: 'Drag & drop .fasta or .gb files anywhere' },
+  { icon: <Keyboard size={13} />, text: 'Cmd+A select all, Cmd+C copy sequence' },
+];
 
 export default function EmptyState() {
   return (
@@ -52,10 +57,31 @@ export default function EmptyState() {
           color: 'var(--text-muted)',
           lineHeight: 1.5,
           maxWidth: 360,
+          marginBottom: 20,
         }}
       >
-        Supports raw sequences, FASTA format, and more
+        Supports raw sequences, FASTA, and GenBank formats
       </p>
+
+      {/* Hints */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {hints.map((h, i) => (
+          <div
+            key={i}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              fontSize: 11,
+              color: 'var(--text-muted)',
+              fontFamily: 'var(--font-sans)',
+            }}
+          >
+            <span style={{ color: 'var(--text-muted)', flexShrink: 0 }}>{h.icon}</span>
+            {h.text}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { SequenceBlock } from './types';
+import type { SequenceBlock, MutationScar } from './types';
 import type { SequenceType, Feature, ManipulationType, SequenceAnalysis } from '../bio/types';
 
 interface SequenceState {
@@ -9,12 +9,18 @@ interface SequenceState {
 interface SequenceActions {
   addBlock(conversationId: string, raw: string, name?: string): string;
   removeBlock(blockId: string): void;
+  restoreBlock(block: SequenceBlock): void;
   updateBlockNotes(blockId: string, notes: string): void;
   updateBlockName(blockId: string, name: string): void;
   reorderBlocks(conversationId: string, blockIds: string[]): void;
   setBlockFeatures(blockId: string, features: Feature[]): void;
+  addFeature(blockId: string, feature: Feature): void;
+  updateFeature(blockId: string, featureId: string, updates: Partial<Feature>): void;
+  removeFeature(blockId: string, featureId: string): void;
   setBlockAnalysis(blockId: string, analysis: SequenceAnalysis | null): void;
   setBlockParent(blockId: string, parentBlockId: string, manipulation: ManipulationType): void;
+  updateBlockRaw(blockId: string, raw: string, scars: MutationScar[]): void;
+  applyMutationSnapshot(blockId: string, raw: string, scars: MutationScar[], features: Feature[]): void;
   getConversationBlocks(conversationId: string): SequenceBlock[];
 }
 
@@ -78,6 +84,7 @@ export const useSequenceStore = create<SequenceStore>((set, get) => ({
       topology: 'linear',
       features: [],
       analysis: null,
+      scars: [],
       parentBlockId: null,
       manipulation: null,
       position: existingBlocks.length,
@@ -90,6 +97,10 @@ export const useSequenceStore = create<SequenceStore>((set, get) => ({
 
   removeBlock(blockId) {
     set((s) => ({ blocks: s.blocks.filter((b) => b.id !== blockId) }));
+  },
+
+  restoreBlock(block) {
+    set((s) => ({ blocks: [...s.blocks, block] }));
   },
 
   updateBlockNotes(blockId, notes) {
@@ -120,6 +131,34 @@ export const useSequenceStore = create<SequenceStore>((set, get) => ({
     }));
   },
 
+  addFeature(blockId, feature) {
+    set((s) => ({
+      blocks: s.blocks.map((b) =>
+        b.id === blockId ? { ...b, features: [...b.features, feature] } : b,
+      ),
+    }));
+  },
+
+  updateFeature(blockId, featureId, updates) {
+    set((s) => ({
+      blocks: s.blocks.map((b) =>
+        b.id === blockId
+          ? { ...b, features: b.features.map((f) => (f.id === featureId ? { ...f, ...updates } : f)) }
+          : b,
+      ),
+    }));
+  },
+
+  removeFeature(blockId, featureId) {
+    set((s) => ({
+      blocks: s.blocks.map((b) =>
+        b.id === blockId
+          ? { ...b, features: b.features.filter((f) => f.id !== featureId) }
+          : b,
+      ),
+    }));
+  },
+
   setBlockAnalysis(blockId, analysis) {
     set((s) => ({
       blocks: s.blocks.map((b) => (b.id === blockId ? { ...b, analysis } : b)),
@@ -130,6 +169,20 @@ export const useSequenceStore = create<SequenceStore>((set, get) => ({
     set((s) => ({
       blocks: s.blocks.map((b) =>
         b.id === blockId ? { ...b, parentBlockId, manipulation } : b,
+      ),
+    }));
+  },
+
+  updateBlockRaw(blockId, raw, scars) {
+    set((s) => ({
+      blocks: s.blocks.map((b) => (b.id === blockId ? { ...b, raw, scars } : b)),
+    }));
+  },
+
+  applyMutationSnapshot(blockId, raw, scars, features) {
+    set((s) => ({
+      blocks: s.blocks.map((b) =>
+        b.id === blockId ? { ...b, raw, scars, features } : b,
       ),
     }));
   },

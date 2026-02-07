@@ -7,12 +7,11 @@ import { ChatInput } from './ChatInput';
 import { APIKeySettings } from './APIKeySettings';
 
 export function AIDrawer() {
-  const isOpen = useUIStore((s) => s.aiDrawerOpen);
   const drawerHeight = useUIStore((s) => s.aiDrawerHeight);
   const setDrawerHeight = useUIStore((s) => s.setAiDrawerHeight);
   const toggleDrawer = useUIStore((s) => s.toggleDrawer);
   const activeModel = useAIStore((s) => s.activeModel);
-  const [isDragging, setIsDragging] = useState(false);
+  const [, setIsDragging] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const dragStartY = useRef(0);
   const dragStartHeight = useRef(0);

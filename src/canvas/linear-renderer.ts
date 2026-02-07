@@ -118,19 +118,9 @@ function drawScaleBar(
   ctx.beginPath();
   ctx.moveTo(x1, y);
   ctx.lineTo(x2, y);
-  ctx.strokeStyle = colors.border;
-  ctx.lineWidth = 2;
+  ctx.strokeStyle = colors.borderSubtle;
+  ctx.lineWidth = 1;
   ctx.stroke();
-
-  // Accent line on top
-  ctx.save();
-  ctx.beginPath();
-  ctx.moveTo(x1, y);
-  ctx.lineTo(x2, y);
-  ctx.strokeStyle = colors.accent;
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-  ctx.restore();
 
   // Tick interval
   const rawInterval = viewLen / 10;
@@ -149,8 +139,8 @@ function drawScaleBar(
   for (let bp = firstTick; bp <= viewEnd; bp += interval) {
     const x = bpToX(bp, viewStart, viewEnd, width, marginLeft);
     ctx.beginPath();
-    ctx.moveTo(x, y - 4);
-    ctx.lineTo(x, y + 4);
+    ctx.moveTo(x, y - 3);
+    ctx.lineTo(x, y + 3);
     ctx.strokeStyle = colors.textMuted;
     ctx.lineWidth = 1;
     ctx.stroke();
@@ -176,7 +166,7 @@ function drawFeatureRect(
   trackBaseY: number,
   trackHeight: number,
   isHovered: boolean,
-  isSelected: boolean,
+  _isSelected: boolean,
   colors: ThemeColors
 ) {
   const x1 = bpToX(feat.start, viewStart, viewEnd, width, marginLeft);
@@ -194,7 +184,7 @@ function drawFeatureRect(
   const r = Math.min(4, rw / 2);
   ctx.roundRect(x1, y, rw, rh, r);
   ctx.fillStyle = featureColor;
-  ctx.globalAlpha = isHovered ? 1 : 0.8;
+  ctx.globalAlpha = isHovered ? 1 : 0.85;
   ctx.fill();
 
   // Direction arrow
@@ -251,7 +241,7 @@ function drawRestrictionSites(
   ctx.save();
   ctx.setLineDash([2, 3]);
   ctx.lineWidth = 1;
-  ctx.globalAlpha = 0.4;
+  ctx.globalAlpha = 0.3;
 
   const usedRects: LabelRect[] = [];
 

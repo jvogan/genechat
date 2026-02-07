@@ -3,3 +3,4 @@ export { default as PlasmidMap } from './PlasmidMap';
 export { default as LinearMap } from './LinearMap';
 export { default as FeatureOverlay } from './FeatureOverlay';
 export { default as ZoomControls } from './ZoomControls';
+export { default as StatusBar } from './StatusBar';

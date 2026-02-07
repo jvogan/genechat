@@ -3,12 +3,12 @@ import ThemeProvider, { useTheme } from './components/layout/ThemeProvider';
 import AppShell from './components/layout/AppShell';
 import Sidebar from './components/sidebar/Sidebar';
 import SequenceStack from './components/sequence-stack/SequenceStack';
-import VizPanel from './components/viz-panel/VizPanel';
 import { AIDrawer } from './components/ai-drawer/AIDrawer';
 import { useUIStore } from './store/ui-store';
 import { useSequenceStore } from './store/sequence-store';
 import { useProjectStore } from './store/project-store';
 import { Sun, Moon } from 'lucide-react';
+import { useURLSync } from './hooks/useURLSync';
 import './index.css';
 
 function AutoSelectConversation() {
@@ -18,7 +18,13 @@ function AutoSelectConversation() {
 
   useEffect(() => {
     if (!activeConversationId && conversations.length > 0) {
-      setActiveConversation(conversations[0].id);
+      // Defer to URL param if present
+      const urlConvId = new URLSearchParams(window.location.search).get('conv');
+      if (urlConvId && conversations.some((c) => c.id === urlConvId)) {
+        setActiveConversation(urlConvId);
+      } else {
+        setActiveConversation(conversations[0].id);
+      }
     }
   }, [activeConversationId, conversations, setActiveConversation]);
 
@@ -43,6 +49,11 @@ function AutoSelectBlock() {
     }
   }, [activeConversationId, activeBlockId, getConversationBlocks, selectSequenceBlock]);
 
+  return null;
+}
+
+function URLSync() {
+  useURLSync();
   return null;
 }
 
@@ -76,37 +87,15 @@ function ThemeToggle() {
   );
 }
 
-function ConnectedVizPanel() {
-  const activeBlockId = useUIStore((s) => s.activeSequenceBlockId);
-  const selectFeature = useUIStore((s) => s.selectFeature);
-  const togglePanel = useUIStore((s) => s.togglePanel);
-  const blocks = useSequenceStore((s) => s.blocks);
-
-  const activeBlock = activeBlockId
-    ? blocks.find((b) => b.id === activeBlockId) ?? null
-    : null;
-
-  return (
-    <VizPanel
-      features={activeBlock?.features ?? []}
-      restrictionSites={activeBlock?.analysis?.restrictionSites ?? []}
-      totalLength={activeBlock?.raw.length ?? 0}
-      topology={activeBlock?.topology ?? 'linear'}
-      onClose={togglePanel}
-      onFeatureSelect={(featureId) => selectFeature(featureId, 'map')}
-    />
-  );
-}
-
 export default function App() {
   return (
     <ThemeProvider>
+      <URLSync />
       <AutoSelectConversation />
       <AutoSelectBlock />
       <AppShell
         sidebar={<Sidebar />}
         center={<SequenceStack />}
-        rightPanel={<ConnectedVizPanel />}
         aiDrawer={<AIDrawer />}
       />
       <ThemeToggle />

@@ -1,8 +1,10 @@
 import { useState, useCallback } from 'react';
-import type { Feature, RestrictionSite, Topology } from '../../bio/types';
+import type { Feature, RestrictionSite, Topology, ORF } from '../../bio/types';
+import { useUIStore } from '../../store/ui-store';
 import PlasmidMap from './PlasmidMap';
 import LinearMap from './LinearMap';
 import ZoomControls from './ZoomControls';
+import StatusBar from './StatusBar';
 
 type ViewMode = 'circular' | 'linear';
 
@@ -11,6 +13,9 @@ interface VizPanelProps {
   restrictionSites: RestrictionSite[];
   totalLength: number;
   topology: Topology;
+  sequence: string;
+  orfs: ORF[];
+  sequenceName: string;
   onClose?: () => void;
   onFeatureSelect?: (featureId: string | null) => void;
 }
@@ -20,13 +25,19 @@ export default function VizPanel({
   restrictionSites,
   totalLength,
   topology,
+  sequence,
+  orfs,
+  sequenceName,
   onClose,
   onFeatureSelect,
 }: VizPanelProps) {
   const [mode, setMode] = useState<ViewMode>(topology === 'circular' ? 'circular' : 'linear');
   const [zoom, setZoom] = useState(1);
   const [hoveredBP, setHoveredBP] = useState<number | null>(null);
-  const [viewport] = useState({ start: 0, end: Math.min(totalLength, totalLength) });
+  const [fitCounter, setFitCounter] = useState(0);
+
+  const selectedRange = useUIStore((s) => s.selectedRange);
+  const setSelectedRange = useUIStore((s) => s.setSelectedRange);
 
   const handlePositionHover = useCallback((bp: number | null) => {
     setHoveredBP(bp);
@@ -35,6 +46,18 @@ export default function VizPanel({
   const handleZoomChange = useCallback((newZoom: number) => {
     setZoom(newZoom);
   }, []);
+
+  const handleFitToView = useCallback(() => {
+    setZoom(1);
+    setFitCounter((c) => c + 1);
+  }, []);
+
+  const handleRangeSelect = useCallback(
+    (range: { start: number; end: number } | null) => {
+      setSelectedRange(range);
+    },
+    [setSelectedRange],
+  );
 
   return (
     <div
@@ -137,6 +160,7 @@ export default function VizPanel({
                 restrictionSites={restrictionSites}
                 totalLength={totalLength}
                 topology={topology}
+                sequenceName={sequenceName}
                 onFeatureSelect={onFeatureSelect}
                 onPositionHover={handlePositionHover}
               />
@@ -145,22 +169,34 @@ export default function VizPanel({
                 features={features}
                 restrictionSites={restrictionSites}
                 totalLength={totalLength}
+                sequence={sequence}
+                orfs={orfs}
+                fitToViewCounter={fitCounter}
                 onFeatureSelect={onFeatureSelect}
                 onPositionHover={handlePositionHover}
+                onRangeSelect={handleRangeSelect}
               />
             )}
 
             {/* Zoom controls overlay */}
             <ZoomControls
               zoom={zoom}
-              position={hoveredBP}
-              totalLength={totalLength}
-              viewport={viewport}
               onZoomChange={handleZoomChange}
+              onFitToView={handleFitToView}
             />
           </>
         )}
       </div>
+
+      {/* Status bar */}
+      {totalLength > 0 && (
+        <StatusBar
+          totalLength={totalLength}
+          sequence={sequence}
+          selectedRange={selectedRange}
+          hoveredBP={hoveredBP}
+        />
+      )}
     </div>
   );
 }

@@ -113,6 +113,8 @@ export default function ConversationList({
             boxShadow: 'var(--shadow-md)',
             padding: '4px 0',
             minWidth: 160,
+            animation: 'menuFadeIn 0.15s ease',
+            transformOrigin: 'top left',
           }}
         >
           {projects?.map((p) => (

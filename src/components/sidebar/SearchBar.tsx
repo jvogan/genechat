@@ -25,7 +25,7 @@ export default function SearchBar({ value, onChange }: SearchBarProps) {
       />
       <input
         type="text"
-        placeholder="Search conversations..."
+        placeholder="Search sequences, features..."
         value={value}
         onChange={e => onChange(e.target.value)}
         style={{

@@ -1,7 +1,5 @@
 import type { SequenceType } from './types';
 
-const DNA_BASES = new Set('ATGCNatgcn'.split(''));
-const RNA_BASES = new Set('AUGCNaugcn'.split(''));
 const DNA_ONLY = new Set('Tt'.split(''));
 const RNA_ONLY = new Set('Uu'.split(''));
 const IUPAC_DNA = new Set('ATGCNRYSWKMBDHVatgcnryswkmbdhv'.split(''));

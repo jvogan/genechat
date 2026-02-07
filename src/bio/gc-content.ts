@@ -98,6 +98,29 @@ export function molecularWeight(seq: string): number {
  * - For longer sequences: basic salt-adjusted formula
  *   Tm = 64.9 + 41*(G+C - 16.4) / (A+T+G+C)
  */
+// Average molecular weights (Da) for amino acids
+const AA_MW: Record<string, number> = {
+  G: 57.02, A: 71.04, V: 99.07, L: 113.08, I: 113.08,
+  P: 97.05, F: 147.07, W: 186.08, M: 131.04, S: 87.03,
+  T: 101.05, C: 103.01, Y: 163.06, H: 137.06, D: 115.03,
+  E: 129.04, N: 114.04, Q: 128.06, K: 128.09, R: 156.10,
+};
+const AVG_AA_MW = 111.1; // fallback average
+
+/**
+ * Estimate molecular weight of a protein sequence.
+ * Sums residue weights and subtracts water lost to peptide bonds.
+ */
+export function proteinMolecularWeight(seq: string): number {
+  const upper = seq.toUpperCase().replace(/\*/g, ''); // strip stop codons
+  if (upper.length === 0) return 0;
+  let mw = 18.02; // add water for the intact protein (N-term H + C-term OH)
+  for (const ch of upper) {
+    mw += AA_MW[ch] ?? AVG_AA_MW;
+  }
+  return Math.round(mw * 100) / 100;
+}
+
 export function meltingTemperature(seq: string): number | null {
   const comp = nucleotideComposition(seq);
   const total = comp.A + comp.T + comp.G + comp.C;

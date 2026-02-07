@@ -146,11 +146,33 @@ export function attachCanvasInteraction(options: CanvasInteractionOptions): () =
     });
   };
 
+  // Set tabIndex so canvas can receive keyboard events
+  canvas.setAttribute('tabindex', '0');
+  canvas.style.outline = 'none';
+
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      const state = getState();
+      if (state.selectedFeature) {
+        onInteraction({ type: 'click', featureId: null, bp: 0 });
+      }
+      if (state.selectedRange) {
+        onInteraction({ type: 'select', range: { start: 0, end: 0 } });
+      }
+    }
+  };
+
+  const handleContextMenu = (e: MouseEvent) => {
+    e.preventDefault();
+  };
+
   canvas.addEventListener('mousemove', handleMouseMove, { signal });
   canvas.addEventListener('mousedown', handleMouseDown, { signal });
   canvas.addEventListener('mouseup', handleMouseUp, { signal });
   canvas.addEventListener('mouseleave', handleMouseLeave, { signal });
   canvas.addEventListener('wheel', handleWheel, { passive: false, signal });
+  canvas.addEventListener('keydown', handleKeyDown, { signal });
+  canvas.addEventListener('contextmenu', handleContextMenu, { signal });
 
   // Return cleanup function
   return () => abortController.abort();

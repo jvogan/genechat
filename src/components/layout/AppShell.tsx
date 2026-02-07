@@ -1,23 +1,20 @@
 import { type ReactNode } from 'react';
-import { Map, MessageSquare, PanelLeftClose, PanelLeft } from 'lucide-react';
+import { MessageSquare, PanelLeftClose, PanelLeft, Map } from 'lucide-react';
 import ResizablePanel from './ResizablePanel';
 import { useUIStore } from '../../store/ui-store';
 
 interface AppShellProps {
   sidebar: ReactNode;
   center: ReactNode;
-  rightPanel: ReactNode;
   aiDrawer?: ReactNode;
 }
 
-export default function AppShell({ sidebar, center, rightPanel, aiDrawer }: AppShellProps) {
+export default function AppShell({ sidebar, center, aiDrawer }: AppShellProps) {
   const sidebarOpen = useUIStore((s) => s.sidebarOpen);
   const sidebarWidth = useUIStore((s) => s.sidebarWidth);
   const setSidebarWidth = useUIStore((s) => s.setSidebarWidth);
   const toggleSidebar = useUIStore((s) => s.toggleSidebar);
   const panelOpen = useUIStore((s) => s.panelOpen);
-  const panelWidth = useUIStore((s) => s.panelWidth);
-  const setPanelWidth = useUIStore((s) => s.setPanelWidth);
   const togglePanel = useUIStore((s) => s.togglePanel);
   const aiDrawerOpen = useUIStore((s) => s.aiDrawerOpen);
   const aiDrawerHeight = useUIStore((s) => s.aiDrawerHeight);
@@ -91,7 +88,7 @@ export default function AppShell({ sidebar, center, rightPanel, aiDrawer }: AppS
               display: 'flex',
               transition: 'all 0.12s',
             }}
-            title={panelOpen ? 'Hide map' : 'Show map'}
+            title="Sequence map"
             onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-secondary)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.color = panelOpen ? 'var(--text-primary)' : 'var(--text-muted)'; }}
           >
@@ -138,18 +135,6 @@ export default function AppShell({ sidebar, center, rightPanel, aiDrawer }: AppS
           )}
         </div>
       </div>
-
-      {/* Right panel */}
-      <ResizablePanel
-        side="right"
-        width={panelWidth}
-        onResize={setPanelWidth}
-        open={panelOpen}
-        minWidth={300}
-        maxWidth={600}
-      >
-        {rightPanel}
-      </ResizablePanel>
     </div>
   );
 }

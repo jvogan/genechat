@@ -19,6 +19,18 @@ interface UIActions {
   setZoom(zoom: number): void;
   setSearchQuery(query: string): void;
   setSequenceColoring(enabled: boolean): void;
+  setSequenceGrouping(n: number): void;
+  setCodonTable(table: 'ecoli' | 'human' | 'yeast'): void;
+  activateEditing(blockId: string, pos: number): void;
+  deactivateEditing(): void;
+  setEditCursorPosition(pos: number): void;
+  toggleInsertMode(): void;
+  setTranslationFrame(frame: 0 | 1 | 2): void;
+  toggleBlockLock(blockId: string): void;
+  openSequenceSearch(): void;
+  closeSequenceSearch(): void;
+  setSequenceSearchQuery(query: string): void;
+  setSequenceSearchMatchIndex(index: number): void;
 }
 
 export type UIStore = UIState & UIActions;
@@ -41,6 +53,16 @@ export const useUIStore = create<UIStore>()(subscribeWithSelector((set) => ({
   zoom: 1,
   searchQuery: '',
   sequenceColoringEnabled: false,
+  sequenceGrouping: 0,
+  codonTable: 'ecoli',
+  editingBlockId: null,
+  editCursorPosition: 0,
+  editInsertMode: true,
+  translationFrame: 0,
+  lockedBlockIds: new Set<string>(),
+  sequenceSearchOpen: false,
+  sequenceSearchQuery: '',
+  sequenceSearchMatchIndex: 0,
 
   // Actions
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
@@ -52,11 +74,32 @@ export const useUIStore = create<UIStore>()(subscribeWithSelector((set) => ({
   setPanelWidth: (panelWidth) => set({ panelWidth }),
   setAiDrawerHeight: (aiDrawerHeight) => set({ aiDrawerHeight }),
   setPanelView: (panelView) => set({ panelView }),
-  setActiveConversation: (id) => set({ activeConversationId: id, activeSequenceBlockId: null }),
-  selectSequenceBlock: (id) => set({ activeSequenceBlockId: id }),
+  setActiveConversation: (id) => set({ activeConversationId: id, activeSequenceBlockId: null, editingBlockId: null }),
+  selectSequenceBlock: (id) => set((s) => ({
+    activeSequenceBlockId: id,
+    selectedRange: id !== s.activeSequenceBlockId ? null : s.selectedRange,
+    editingBlockId: id,
+    editCursorPosition: id !== s.activeSequenceBlockId ? 0 : s.editCursorPosition,
+  })),
   selectFeature: (id, source) => set({ selectedFeatureId: id, selectionSource: source }),
   setSelectedRange: (range) => set({ selectedRange: range }),
   setZoom: (zoom) => set({ zoom: Math.max(0.1, Math.min(10, zoom)) }),
   setSearchQuery: (searchQuery) => set({ searchQuery }),
   setSequenceColoring: (sequenceColoringEnabled) => set({ sequenceColoringEnabled }),
+  setSequenceGrouping: (sequenceGrouping) => set({ sequenceGrouping }),
+  setCodonTable: (codonTable) => set({ codonTable }),
+  activateEditing: (blockId, pos) => set({ editingBlockId: blockId, editCursorPosition: pos, editInsertMode: true, selectedRange: null }),
+  deactivateEditing: () => set({ editingBlockId: null, editCursorPosition: 0, editInsertMode: true }),
+  setEditCursorPosition: (pos) => set({ editCursorPosition: pos }),
+  toggleInsertMode: () => set((s) => ({ editInsertMode: !s.editInsertMode })),
+  setTranslationFrame: (translationFrame) => set({ translationFrame }),
+  openSequenceSearch: () => set({ sequenceSearchOpen: true }),
+  closeSequenceSearch: () => set({ sequenceSearchOpen: false, sequenceSearchQuery: '', sequenceSearchMatchIndex: 0 }),
+  setSequenceSearchQuery: (sequenceSearchQuery) => set({ sequenceSearchQuery, sequenceSearchMatchIndex: 0 }),
+  setSequenceSearchMatchIndex: (sequenceSearchMatchIndex) => set({ sequenceSearchMatchIndex }),
+  toggleBlockLock: (blockId) => set((s) => {
+    const next = new Set(s.lockedBlockIds);
+    if (next.has(blockId)) next.delete(blockId); else next.add(blockId);
+    return { lockedBlockIds: next };
+  }),
 })));

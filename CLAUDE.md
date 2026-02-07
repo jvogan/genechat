@@ -24,15 +24,6 @@ This is a **sequence workbench**, not a chat app. The center panel is a stack of
 npm run dev   # port 5180
 ```
 
-## Prototype files
-
-The parent directory (`../`) contains reference files not in this repo:
-- `../index.html` — Original single-file working prototype (all features in one HTML file)
-- `../diagram.html` — UI/UX architecture diagram showing panel layout and data flow
-- `../genechat-*.png` — Screenshots from various development stages
-
-These are kept locally for design reference. The prototype demonstrates the intended UX before it was decomposed into the React app.
-
 ## Known gotchas
 
 - React StrictMode runs effects twice. Module-level guards (`let seeded = false`) survive the unmount/remount cycle; `useRef` guards do not.

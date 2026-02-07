@@ -11,6 +11,7 @@ interface PlasmidMapProps {
   restrictionSites: RestrictionSite[];
   totalLength: number;
   topology: 'linear' | 'circular';
+  sequenceName?: string;
   onFeatureSelect?: (featureId: string | null) => void;
   onPositionHover?: (bp: number | null) => void;
 }
@@ -20,6 +21,7 @@ export default function PlasmidMap({
   restrictionSites,
   totalLength,
   topology,
+  sequenceName,
   onFeatureSelect,
   onPositionHover,
 }: PlasmidMapProps) {
@@ -43,11 +45,8 @@ export default function PlasmidMap({
   const selectedFeatureId = useUIStore((s) => s.selectedFeatureId);
   const selectionSource = useUIStore((s) => s.selectionSource);
   useEffect(() => {
-    // When selection comes from 'workspace', push it into canvas state so the
-    // renderer highlights the corresponding arc on the plasmid map.
-    if (selectionSource === 'workspace' || selectedFeatureId === null) {
-      stateRef.current.selectedFeature = selectedFeatureId;
-    }
+    // Always sync — safe because click handler and store both write the same value
+    stateRef.current.selectedFeature = selectedFeatureId;
   }, [selectedFeatureId, selectionSource]);
 
   const handleInteraction = useCallback((event: InteractionEvent) => {
@@ -110,6 +109,7 @@ export default function PlasmidMap({
           hoveredFeature: state.hoveredFeature,
           selectedFeature: state.selectedFeature,
           topology,
+          sequenceName: sequenceName ?? '',
         });
       }
       rafRef.current = requestAnimationFrame(render);

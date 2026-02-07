@@ -3,6 +3,7 @@ import { useProjectStore } from '../store/project-store';
 import { useSequenceStore } from '../store/sequence-store';
 import { useAIStore } from '../store/ai-store';
 import { useUIStore } from '../store/ui-store';
+import { useCheckpointStore } from '../store/checkpoint-store';
 import type { AIProviderName } from '../store/types';
 
 // Hydrate stores from IndexedDB on app load
@@ -23,6 +24,11 @@ export async function hydrate(): Promise<void> {
 
     if (blocks.length > 0) {
       useSequenceStore.setState({ blocks });
+    }
+
+    const checkpointRows = await db.checkpoints.toArray();
+    if (checkpointRows.length > 0) {
+      useCheckpointStore.setState({ checkpoints: checkpointRows });
     }
 
     if (themeRow?.value) {
@@ -131,11 +137,29 @@ export function startSync(): () => void {
     ),
   );
 
+  let checkpointTimer: ReturnType<typeof setTimeout>;
+  unsubs.push(
+    useCheckpointStore.subscribe((state) => {
+      clearTimeout(checkpointTimer);
+      checkpointTimer = setTimeout(async () => {
+        try {
+          await db.transaction('rw', db.checkpoints, async () => {
+            await db.checkpoints.clear();
+            if (state.checkpoints.length > 0) await db.checkpoints.bulkPut(state.checkpoints);
+          });
+        } catch (err) {
+          console.warn('Failed to sync checkpoints:', err);
+        }
+      }, 300);
+    }),
+  );
+
   return () => {
     unsubs.forEach((fn) => fn());
     clearTimeout(projectTimer);
     clearTimeout(seqTimer);
     clearTimeout(uiTimer);
     clearTimeout(keyTimer);
+    clearTimeout(checkpointTimer);
   };
 }
