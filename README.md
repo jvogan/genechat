@@ -45,7 +45,7 @@ Needleman-Wunsch pairwise alignment with color-coded identity/mismatch display, 
 
 ### AI Assistant
 
-Bring-your-own-key chat drawer supporting Claude, GPT, Gemini, and Kimi. The assistant sees your workspace context and can create blocks, add features, modify sequences, rename blocks, and highlight regions.
+Bring-your-own-key chat drawer supporting Claude, GPT, Gemini, and Kimi. The assistant sees your workspace context and can create blocks, add features, modify sequences, rename blocks, and highlight regions. Click the key icon in the AI drawer to add your API key — keys are stored locally in your browser and never sent to any server.
 
 <p align="center"><img src="docs/assets/ai-chat.png" width="720" alt="AI assistant" /></p>
 
