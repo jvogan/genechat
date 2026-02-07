@@ -1,5 +1,5 @@
 import { type ReactNode } from 'react';
-import { MessageSquare, PanelLeftClose, PanelLeft, Map } from 'lucide-react';
+import { MessageSquare, PanelLeftClose, PanelLeft } from 'lucide-react';
 import ResizablePanel from './ResizablePanel';
 import { useUIStore } from '../../store/ui-store';
 
@@ -14,8 +14,6 @@ export default function AppShell({ sidebar, center, aiDrawer }: AppShellProps) {
   const sidebarWidth = useUIStore((s) => s.sidebarWidth);
   const setSidebarWidth = useUIStore((s) => s.setSidebarWidth);
   const toggleSidebar = useUIStore((s) => s.toggleSidebar);
-  const panelOpen = useUIStore((s) => s.panelOpen);
-  const togglePanel = useUIStore((s) => s.togglePanel);
   const aiDrawerOpen = useUIStore((s) => s.aiDrawerOpen);
   const aiDrawerHeight = useUIStore((s) => s.aiDrawerHeight);
   const toggleDrawer = useUIStore((s) => s.toggleDrawer);
@@ -70,6 +68,7 @@ export default function AppShell({ sidebar, center, aiDrawer }: AppShellProps) {
               transition: 'color 0.12s',
             }}
             title="Toggle sidebar"
+            aria-label="Toggle sidebar"
             onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-secondary)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-muted)'; }}
           >
@@ -77,24 +76,7 @@ export default function AppShell({ sidebar, center, aiDrawer }: AppShellProps) {
           </button>
           <div style={{ flex: 1 }} />
           <button
-            onClick={togglePanel}
-            style={{
-              background: panelOpen ? 'var(--bg-active)' : 'none',
-              border: 'none',
-              color: panelOpen ? 'var(--text-primary)' : 'var(--text-muted)',
-              cursor: 'pointer',
-              padding: 6,
-              borderRadius: 6,
-              display: 'flex',
-              transition: 'all 0.12s',
-            }}
-            title="Sequence map"
-            onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-secondary)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = panelOpen ? 'var(--text-primary)' : 'var(--text-muted)'; }}
-          >
-            <Map size={16} />
-          </button>
-          <button
+            data-testid="ai-drawer-toggle"
             onClick={toggleDrawer}
             style={{
               background: aiDrawerOpen ? 'var(--bg-active)' : 'none',
@@ -107,6 +89,7 @@ export default function AppShell({ sidebar, center, aiDrawer }: AppShellProps) {
               transition: 'all 0.12s',
             }}
             title="AI Chat"
+            aria-label="AI Chat"
             onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-secondary)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.color = aiDrawerOpen ? 'var(--text-primary)' : 'var(--text-muted)'; }}
           >

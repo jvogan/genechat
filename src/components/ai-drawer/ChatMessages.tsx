@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useAIStore } from '../../store/ai-store';
+import MarkdownText from './MarkdownText';
 
 export function ChatMessages() {
   const messages = useAIStore((s) => s.chatMessages);
@@ -114,7 +115,7 @@ function MessageContent({ content, role }: { content: string; role: string }) {
 
   const flushText = () => {
     if (textBuffer.length > 0) {
-      elements.push(<span key={`t${elements.length}`}>{textBuffer.join('\n')}</span>);
+      elements.push(<MarkdownText key={`t${elements.length}`} text={textBuffer.join('\n')} />);
       textBuffer = [];
     }
   };

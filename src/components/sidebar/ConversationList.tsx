@@ -4,6 +4,20 @@ import { FolderClosed, Trash2 } from 'lucide-react';
 export interface ConversationItem {
   id: string;
   title: string;
+  blockCount?: number;
+  updatedAt?: number;
+}
+
+function relativeTime(timestamp: number): string {
+  const diff = Date.now() - timestamp;
+  const seconds = Math.floor(diff / 1000);
+  if (seconds < 60) return 'just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
 }
 
 interface ProjectInfo {
@@ -35,6 +49,8 @@ export default function ConversationList({
     y: number;
   } | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
+  const deleteConfirmTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!contextMenu) return;
@@ -44,7 +60,11 @@ export default function ConversationList({
       }
     }
     document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
+    return () => {
+      document.removeEventListener('mousedown', handleClick);
+      setConfirmingDeleteId(null);
+      if (deleteConfirmTimer.current) clearTimeout(deleteConfirmTimer.current);
+    };
   }, [contextMenu]);
 
   function handleContextMenu(e: React.MouseEvent, conversationId: string) {
@@ -59,6 +79,7 @@ export default function ConversationList({
         const active = c.id === activeId;
         return (
           <button
+            data-testid="conversation-item"
             key={c.id}
             onClick={() => onSelect(c.id)}
             onContextMenu={(e) => handleContextMenu(e, c.id)}
@@ -94,6 +115,13 @@ export default function ConversationList({
             >
               {c.title}
             </div>
+            {(c.blockCount != null || c.updatedAt != null) && (
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>
+                {c.blockCount != null && `${c.blockCount} block${c.blockCount !== 1 ? 's' : ''}`}
+                {c.blockCount != null && c.updatedAt != null && ' \u00b7 '}
+                {c.updatedAt != null && relativeTime(c.updatedAt)}
+              </div>
+            )}
           </button>
         );
       })}
@@ -161,8 +189,15 @@ export default function ConversationList({
           {onDelete && (
             <button
               onClick={() => {
-                onDelete(contextMenu.conversationId);
-                setContextMenu(null);
+                if (confirmingDeleteId === contextMenu.conversationId) {
+                  if (deleteConfirmTimer.current) clearTimeout(deleteConfirmTimer.current);
+                  onDelete(contextMenu.conversationId);
+                  setContextMenu(null);
+                  setConfirmingDeleteId(null);
+                } else {
+                  setConfirmingDeleteId(contextMenu.conversationId);
+                  deleteConfirmTimer.current = setTimeout(() => setConfirmingDeleteId(null), 3000);
+                }
               }}
               style={{
                 width: '100%',
@@ -170,23 +205,24 @@ export default function ConversationList({
                 alignItems: 'center',
                 gap: 8,
                 padding: '6px 12px',
-                background: 'none',
+                background: confirmingDeleteId === contextMenu.conversationId ? 'var(--danger-bg)' : 'none',
                 border: 'none',
                 cursor: 'pointer',
                 fontSize: 12,
+                fontWeight: confirmingDeleteId === contextMenu.conversationId ? 600 : 400,
                 fontFamily: 'var(--font-sans)',
                 color: 'var(--rose)',
                 textAlign: 'left',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'var(--bg-hover)';
+                if (confirmingDeleteId !== contextMenu.conversationId) e.currentTarget.style.background = 'var(--bg-hover)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'none';
+                if (confirmingDeleteId !== contextMenu.conversationId) e.currentTarget.style.background = 'none';
               }}
             >
               <Trash2 size={13} />
-              Delete
+              {confirmingDeleteId === contextMenu.conversationId ? 'Really delete?' : 'Delete'}
             </button>
           )}
         </div>

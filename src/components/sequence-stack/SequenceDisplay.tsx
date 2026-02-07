@@ -208,6 +208,9 @@ export default function SequenceDisplay({
     chunks.push(sequence);
   }
 
+  const showLineNumbers = sequence.length > 100 && grouping > 0;
+  const chunksPerRow = Math.max(1, Math.floor(60 / grouping));
+
   const showFade = !expanded && overflows;
 
   // Style for a scar at a given position
@@ -281,8 +284,21 @@ export default function SequenceDisplay({
         >
           {chunks.map((chunk, ci) => {
             const chunkStart = grouping > 0 ? ci * grouping : 0;
+            const showMarker = showLineNumbers && ci % chunksPerRow === 0;
             return (
             <span key={ci}>
+              {showMarker && (
+                <>
+                  {ci > 0 && <br />}
+                  <span style={{
+                    display: 'inline-block', minWidth: 40, textAlign: 'right', marginRight: 8,
+                    fontSize: 9, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)',
+                    userSelect: 'none', verticalAlign: 'baseline',
+                  }}>
+                    {chunkStart + 1}
+                  </span>
+                </>
+              )}
               {[...chunk].map((base, bi) => {
                 const absIdx = chunkStart + bi;
                 const selected = isSelected(absIdx);

@@ -22,6 +22,7 @@ export const geminiProvider: AIProvider = {
     messages: AIMessage[],
     config: AIProviderConfig,
     onChunk: (chunk: AIStreamChunk) => void,
+    signal?: AbortSignal,
   ): Promise<string> {
     const baseUrl =
       config.baseUrl || 'https://generativelanguage.googleapis.com/v1beta';
@@ -35,50 +36,59 @@ export const geminiProvider: AIProvider = {
       body.systemInstruction = systemInstruction;
     }
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-
-    if (!response.ok) {
-      const err = await response.text();
-      throw new Error(`Gemini API error (${response.status}): ${err}`);
-    }
-
-    const reader = response.body?.getReader();
-    if (!reader) throw new Error('No response body');
-
-    const decoder = new TextDecoder();
     let fullContent = '';
-    let buffer = '';
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        signal,
+      });
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
+      if (!response.ok) {
+        const err = await response.text();
+        throw new Error(`Gemini API error (${response.status}): ${err}`);
+      }
 
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error('No response body');
 
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        const data = line.slice(6).trim();
+      const decoder = new TextDecoder();
+      let buffer = '';
 
-        try {
-          const parsed = JSON.parse(data);
-          const text = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (text) {
-            fullContent += text;
-            onChunk({ content: text, done: false });
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const data = line.slice(6).trim();
+
+          try {
+            const parsed = JSON.parse(data);
+            const text = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (text) {
+              fullContent += text;
+              onChunk({ content: text, done: false });
+            }
+          } catch {
+            // skip
           }
-        } catch {
-          // skip
         }
       }
-    }
 
-    onChunk({ content: '', done: true });
+      onChunk({ content: '', done: true });
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        onChunk({ content: '', done: true });
+        return fullContent;
+      }
+      throw err;
+    }
     return fullContent;
   },
 

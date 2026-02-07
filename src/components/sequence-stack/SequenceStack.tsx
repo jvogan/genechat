@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { ArrowUp, Upload, Download, X, Undo2, Link2, GitCompare } from 'lucide-react';
 import SequenceBlock from './SequenceBlock';
 import EmptyState from './EmptyState';
@@ -19,12 +19,13 @@ import {
 } from '../../bio';
 import type { ManipulationType, Feature } from '../../bio/types';
 import type { SequenceBlock as SequenceBlockType } from '../../store/types';
-import { exportToFasta, exportToMarkdown, downloadFile } from '../../persistence/export';
-import DigestDialog from './DigestDialog';
-import LigationDialog from './LigationDialog';
-import PrimerDesignDialog from './PrimerDesignDialog';
-import SequenceDiffView from './SequenceDiffView';
+import { exportToFasta, exportToMarkdown, exportToGenBank, downloadFile } from '../../persistence/export';
+const DigestDialog = lazy(() => import('./DigestDialog'));
+const LigationDialog = lazy(() => import('./LigationDialog'));
+const PrimerDesignDialog = lazy(() => import('./PrimerDesignDialog'));
+const SequenceDiffView = lazy(() => import('./SequenceDiffView'));
 import type { DigestFragment } from '../../bio/restriction-digest';
+import { validateAndCleanSequence } from '../../bio/validate-sequence';
 
 // ---- Sample sequences for seed data ----
 const GFP_SEQ =
@@ -83,9 +84,13 @@ export default function SequenceStack() {
   const [ligationDialogOpen, setLigationDialogOpen] = useState(false);
   const [primerDesignBlock, setPrimerDesignBlock] = useState<SequenceBlockType | null>(null);
   const [diffDialogOpen, setDiffDialogOpen] = useState(false);
+  const [confirmingBatchDelete, setConfirmingBatchDelete] = useState(false);
+  const [deletedBatch, setDeletedBatch] = useState<SequenceBlockType[] | null>(null);
   const [dragState, setDragState] = useState<{ blockId: string; startY: number; currentY: number; dropIndex: number } | null>(null);
   const blockRefsMap = useRef<Map<string, HTMLDivElement>>(new Map());
   const deleteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const batchDeleteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const batchUndoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const notificationTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dismissTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -113,6 +118,9 @@ export default function SequenceStack() {
 
   const activeBlockId = useUIStore((s) => s.activeSequenceBlockId);
   const selectSequenceBlock = useUIStore((s) => s.selectSequenceBlock);
+  const selectedBlockIds = useUIStore((s) => s.selectedBlockIds);
+  const toggleBlockSelection = useUIStore((s) => s.toggleBlockSelection);
+  const clearBlockSelection = useUIStore((s) => s.clearBlockSelection);
 
   const allBlocks = useSequenceStore((s) => s.blocks);
   const addBlock = useSequenceStore((s) => s.addBlock);
@@ -287,6 +295,14 @@ export default function SequenceStack() {
 
     const handler = (e: KeyboardEvent) => {
       const metaOrCtrl = e.metaKey || e.ctrlKey;
+
+      // Cmd+/ — toggle shortcut legend (no Shift required)
+      if (metaOrCtrl && e.key === '/') {
+        e.preventDefault();
+        useUIStore.getState().toggleShortcutLegend();
+        return;
+      }
+
       if (!metaOrCtrl || !e.shiftKey) return;
 
       const block = allBlocks.find((b) => b.id === activeBlockId);
@@ -320,7 +336,14 @@ export default function SequenceStack() {
 
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- handleAction reads current state via store; adding it would cause unnecessary re-registration
   }, [activeBlockId, activeConversationId, allBlocks]);
+
+  // Reset batch delete confirmation when selection changes
+  useEffect(() => {
+    setConfirmingBatchDelete(false);
+    if (batchDeleteTimer.current) clearTimeout(batchDeleteTimer.current);
+  }, [selectedBlockIds]);
 
   // --- Process file/pasted content by detecting format ---
   const processFileContent = (content: string, fileName?: string) => {
@@ -332,14 +355,34 @@ export default function SequenceStack() {
     if (format === 'fasta') {
       const records = parseFasta(content);
       for (const rec of records) {
-        const blockId = addBlock(activeConversationId, rec.sequence, rec.header || fileName);
+        const { cleaned, invalidCount, invalidChars } = validateAndCleanSequence(rec.sequence);
+        if (cleaned.length === 0) {
+          showNotification('No valid sequence characters found');
+          continue;
+        }
+        if (invalidCount > 0) {
+          const s = invalidCount !== 1 ? 's' : '';
+          const chars = invalidChars.slice(0, 5).join(', ');
+          showNotification(`Removed ${invalidCount} invalid character${s} (${chars})`);
+        }
+        const blockId = addBlock(activeConversationId, cleaned, rec.header || fileName);
         lastBlockId = blockId;
         count++;
       }
     } else if (format === 'genbank') {
       const records = parseGenBank(content);
       for (const rec of records) {
-        const blockId = addBlock(activeConversationId, rec.sequence, rec.name || fileName);
+        const { cleaned, invalidCount, invalidChars } = validateAndCleanSequence(rec.sequence);
+        if (cleaned.length === 0) {
+          showNotification('No valid sequence characters found');
+          continue;
+        }
+        if (invalidCount > 0) {
+          const s = invalidCount !== 1 ? 's' : '';
+          const chars = invalidChars.slice(0, 5).join(', ');
+          showNotification(`Removed ${invalidCount} invalid character${s} (${chars})`);
+        }
+        const blockId = addBlock(activeConversationId, cleaned, rec.name || fileName);
         if (rec.features.length > 0) {
           setBlockFeatures(blockId, rec.features);
         }
@@ -347,10 +390,17 @@ export default function SequenceStack() {
         count++;
       }
     } else {
-      const clean = content.replace(/[\s\d]/g, '');
-      if (clean.length > 0) {
-        lastBlockId = addBlock(activeConversationId, clean, fileName);
+      const { cleaned, invalidCount, invalidChars } = validateAndCleanSequence(content);
+      if (cleaned.length > 0) {
+        if (invalidCount > 0) {
+          const s = invalidCount !== 1 ? 's' : '';
+          const chars = invalidChars.slice(0, 5).join(', ');
+          showNotification(`Removed ${invalidCount} invalid character${s} (${chars})`);
+        }
+        lastBlockId = addBlock(activeConversationId, cleaned, fileName);
         count++;
+      } else if (content.replace(/[\s\d]/g, '').length > 0) {
+        showNotification('No valid sequence characters found');
       }
     }
 
@@ -629,6 +679,7 @@ export default function SequenceStack() {
       {/* Notification banner */}
       {notification && (
         <div
+          data-testid="notification"
           style={{
             margin: '0 24px 8px',
             padding: '8px 14px',
@@ -670,6 +721,8 @@ export default function SequenceStack() {
             }}
             onMouseEnter={e => { e.currentTarget.style.color = 'var(--text-secondary)'; }}
             onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; }}
+            aria-label="Dismiss notification"
+            title="Dismiss notification"
           >
             <X size={14} />
           </button>
@@ -729,6 +782,58 @@ export default function SequenceStack() {
               borderRadius: 2,
               flexShrink: 0,
             }}
+            aria-label="Dismiss undo notification"
+            title="Dismiss undo notification"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
+      {/* Batch undo delete banner */}
+      {deletedBatch && (
+        <div style={{
+          margin: '0 24px 8px',
+          padding: '8px 14px',
+          borderRadius: 'var(--radius-md)',
+          background: 'var(--danger-bg)',
+          border: '1px solid var(--danger-border)',
+          color: 'var(--text-secondary)',
+          fontSize: 12,
+          fontWeight: 500,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          boxShadow: 'var(--shadow-sm)',
+          animation: 'notifySlideIn 0.25s ease',
+        }}>
+          <span style={{ flex: 1 }}>Deleted {deletedBatch.length} blocks</span>
+          <button
+            onClick={() => {
+              for (const block of deletedBatch) restoreBlock(block);
+              setDeletedBatch(null);
+              if (batchUndoTimer.current) clearTimeout(batchUndoTimer.current);
+            }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 4,
+              background: 'none', border: '1px solid var(--danger-border)',
+              borderRadius: 'var(--radius-sm)', color: 'var(--danger-text)',
+              cursor: 'pointer', padding: '3px 8px', fontSize: 11,
+              fontWeight: 600, fontFamily: 'var(--font-sans)',
+            }}
+          >
+            <Undo2 size={11} />
+            Undo
+          </button>
+          <button
+            onClick={() => { setDeletedBatch(null); if (batchUndoTimer.current) clearTimeout(batchUndoTimer.current); }}
+            style={{
+              background: 'none', border: 'none', color: 'var(--text-muted)',
+              cursor: 'pointer', padding: 2, display: 'flex', alignItems: 'center',
+              borderRadius: 2, flexShrink: 0,
+            }}
+            aria-label="Dismiss undo notification"
+            title="Dismiss undo notification"
           >
             <X size={14} />
           </button>
@@ -780,6 +885,7 @@ export default function SequenceStack() {
                   </button>
                 )}
                 <button
+                  data-testid="export-button"
                   onClick={() => setExportMenuOpen(v => !v)}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 4,
@@ -833,9 +939,79 @@ export default function SequenceStack() {
                       >
                         Export All as Markdown
                       </button>
+                      <button
+                        onClick={() => {
+                          const content = blocks.map(b => {
+                            const blockData = { id: b.id, name: b.name, notes: '', raw: b.raw, type: b.type, topology: b.topology, features: b.features, analysis: null, scars: [], conversationId: '', parentBlockId: null, manipulation: null, position: 0, createdAt: 0 };
+                            return exportToGenBank(blockData);
+                          }).join('\n');
+                          const filename = `${(conversation?.title || 'sequences').replace(/[^a-zA-Z0-9_.-]/g, '_')}.gb`;
+                          downloadFile(content, filename, 'text/plain');
+                          setExportMenuOpen(false);
+                          showNotification('Exported all sequences as GenBank');
+                        }}
+                        style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: 12, fontFamily: 'var(--font-sans)', cursor: 'pointer', textAlign: 'left' as const }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-hover)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
+                      >
+                        Export All as GenBank
+                      </button>
                     </div>
                   </>
                 )}
+              </div>
+            )}
+            {selectedBlockIds.size > 1 && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px',
+                background: 'var(--accent-subtle)', border: '1px solid var(--accent)',
+                borderRadius: 'var(--radius-md)', marginBottom: 8,
+                animation: 'menuFadeIn 0.15s ease',
+              }}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent)' }}>
+                  {selectedBlockIds.size} selected
+                </span>
+                <div style={{ flex: 1 }} />
+                <button onClick={() => {
+                  const selected = blocks.filter(b => selectedBlockIds.has(b.id));
+                  const content = exportToFasta(selected);
+                  const filename = 'selected_sequences.fasta';
+                  downloadFile(content, filename, 'text/plain');
+                }} style={{
+                  padding: '3px 8px', fontSize: 11, fontWeight: 500, background: 'none',
+                  border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)',
+                  color: 'var(--text-secondary)', cursor: 'pointer', fontFamily: 'var(--font-sans)',
+                }}>
+                  Export FASTA
+                </button>
+                <button onClick={() => {
+                  if (confirmingBatchDelete) {
+                    if (batchDeleteTimer.current) clearTimeout(batchDeleteTimer.current);
+                    const deletedBlocks = blocks.filter(b => selectedBlockIds.has(b.id));
+                    for (const bid of selectedBlockIds) removeBlock(bid);
+                    clearBlockSelection();
+                    setConfirmingBatchDelete(false);
+                    setDeletedBatch(deletedBlocks);
+                    if (batchUndoTimer.current) clearTimeout(batchUndoTimer.current);
+                    batchUndoTimer.current = setTimeout(() => setDeletedBatch(null), 5000);
+                  } else {
+                    setConfirmingBatchDelete(true);
+                    batchDeleteTimer.current = setTimeout(() => setConfirmingBatchDelete(false), 3000);
+                  }
+                }} style={{
+                  padding: '3px 8px', fontSize: 11, fontWeight: confirmingBatchDelete ? 600 : 500,
+                  background: confirmingBatchDelete ? 'var(--danger-bg)' : 'none',
+                  border: '1px solid var(--rose)', borderRadius: 'var(--radius-sm)',
+                  color: 'var(--rose)', cursor: 'pointer', fontFamily: 'var(--font-sans)',
+                }}>
+                  {confirmingBatchDelete ? 'Really delete?' : 'Delete'}
+                </button>
+                <button onClick={() => clearBlockSelection()} style={{
+                  padding: '3px 8px', fontSize: 11, fontWeight: 500, background: 'none',
+                  border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontFamily: 'var(--font-sans)',
+                }}>
+                  Clear
+                </button>
               </div>
             )}
             {blocks.map((b, idx) => {
@@ -861,7 +1037,14 @@ export default function SequenceStack() {
                       if (el) blockRefsMap.current.set(b.id, el);
                       else blockRefsMap.current.delete(b.id);
                     }}
-                    onClick={() => selectSequenceBlock(b.id)}
+                    onClick={(e) => {
+                      if (e.shiftKey) {
+                        toggleBlockSelection(b.id);
+                      } else {
+                        if (selectedBlockIds.size > 0) clearBlockSelection();
+                        selectSequenceBlock(b.id);
+                      }
+                    }}
                     style={{
                       opacity: isDragged ? 0.5 : 1,
                       transition: isDragged ? 'none' : 'opacity 0.15s',
@@ -927,6 +1110,16 @@ export default function SequenceStack() {
                       onNotesChange={(notes) => updateBlockNotes(b.id, notes)}
                       onNameChange={(name) => updateBlockName(b.id, name)}
                       onAction={(type) => handleAction(b, type)}
+                      onDuplicate={() => {
+                        if (!activeConversationId) return;
+                        const newId = addBlock(activeConversationId, b.raw, b.name + ' (copy)');
+                        if (b.features.length > 0) {
+                          setBlockFeatures(newId, (JSON.parse(JSON.stringify(b.features)) as Feature[]).map((f) => ({ ...f, id: crypto.randomUUID() })));
+                        }
+                        setBlockParent(newId, b.id, 'extract');
+                        selectSequenceBlock(newId);
+                        showNotification(`Duplicated "${b.name}"`);
+                      }}
                       onDelete={() => handleSoftDelete(b.id)}
                       onNavigateToParent={handleNavigateToParent}
                       onAddFeature={(f) => addFeature(b.id, f)}
@@ -1002,6 +1195,7 @@ export default function SequenceStack() {
           }}
         >
           <textarea
+            data-testid="sequence-input"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -1039,10 +1233,12 @@ export default function SequenceStack() {
             onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-secondary)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-muted)'; }}
             title="Upload file"
+            aria-label="Upload file"
           >
             <Upload size={16} />
           </button>
           <button
+            data-testid="submit-sequence"
             onClick={handlePaste}
             disabled={!inputValue.trim()}
             style={{
@@ -1058,6 +1254,8 @@ export default function SequenceStack() {
               transition: 'background 0.15s ease',
               flexShrink: 0,
             }}
+            aria-label="Submit sequence"
+            title="Submit sequence"
           >
             <ArrowUp
               size={18}
@@ -1069,6 +1267,7 @@ export default function SequenceStack() {
         </div>
       </div>
       <input
+        data-testid="file-upload"
         ref={fileInputRef}
         type="file"
         accept=".fasta,.fa,.fna,.gb,.gbk,.genbank,.txt"
@@ -1085,6 +1284,7 @@ export default function SequenceStack() {
         }}
       />
 
+      <Suspense fallback={null}>
       {/* Restriction Digest Dialog */}
       {digestDialogBlock && (
         <DigestDialog
@@ -1151,6 +1351,7 @@ export default function SequenceStack() {
           onClose={() => setDiffDialogOpen(false)}
         />
       )}
+      </Suspense>
     </div>
   );
 }

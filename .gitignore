@@ -38,3 +38,8 @@ Thumbs.db
 
 # Playwright MCP
 .playwright-mcp/
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/

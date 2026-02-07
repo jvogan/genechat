@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
+import { Square } from 'lucide-react';
 import { useAIChat } from '../../hooks/useAIChat';
 import { useAIStore } from '../../store/ai-store';
 import { ModelPicker } from './ModelPicker';
@@ -94,30 +95,53 @@ export function ChatInput() {
           }}
         />
 
-        {/* Send */}
-        <button
-          onClick={handleSend}
-          disabled={!text.trim() || isStreaming}
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: 10,
-            border: 'none',
-            background:
-              text.trim() && !isStreaming ? 'var(--accent)' : 'var(--bg-tertiary)',
-            color:
-              text.trim() && !isStreaming ? 'var(--bg-deep)' : 'var(--text-muted)',
-            fontSize: 16,
-            cursor: text.trim() && !isStreaming ? 'pointer' : 'default',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-            transition: 'background 0.15s, color 0.15s',
-          }}
-        >
-          {isStreaming ? '...' : '\u2191'}
-        </button>
+        {/* Send / Stop */}
+        {isStreaming ? (
+          <button
+            onClick={() => useAIStore.getState().stopGeneration()}
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 10,
+              border: 'none',
+              background: 'var(--rose)',
+              color: 'white',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+            aria-label="Stop generation"
+            title="Stop generation"
+          >
+            <Square size={14} />
+          </button>
+        ) : (
+          <button
+            onClick={handleSend}
+            disabled={!text.trim()}
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 10,
+              border: 'none',
+              background: text.trim() ? 'var(--accent)' : 'var(--bg-tertiary)',
+              color: text.trim() ? 'var(--bg-deep)' : 'var(--text-muted)',
+              fontSize: 16,
+              cursor: text.trim() ? 'pointer' : 'default',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              transition: 'background 0.15s, color 0.15s',
+            }}
+            aria-label="Send message"
+            title="Send message"
+          >
+            {'\u2191'}
+          </button>
+        )}
       </div>
     </div>
   );

@@ -23,6 +23,7 @@ export interface AIProvider {
     messages: AIMessage[],
     config: AIProviderConfig,
     onChunk: (chunk: AIStreamChunk) => void,
+    signal?: AbortSignal,
   ): Promise<string>;
 
   validateKey(config: AIProviderConfig): Promise<boolean>;

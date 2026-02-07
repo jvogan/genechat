@@ -9,11 +9,13 @@ interface AIActions {
   updateLastAssistantMessage(content: string): void;
   clearChat(): void;
   setStreaming(streaming: boolean): void;
+  setAbortController(ctrl: AbortController | null): void;
+  stopGeneration(): void;
 }
 
-export type AIStoreType = AIState & AIActions;
+export type AIStoreType = AIState & AIActions & { abortController: AbortController | null };
 
-export const useAIStore = create<AIStoreType>()(subscribeWithSelector((set) => ({
+export const useAIStore = create<AIStoreType>()(subscribeWithSelector((set, get) => ({
   activeProvider: 'claude',
   activeModel: 'claude-sonnet-4-5-20250929',
   apiKeys: {
@@ -24,6 +26,7 @@ export const useAIStore = create<AIStoreType>()(subscribeWithSelector((set) => (
   },
   chatMessages: [],
   isStreaming: false,
+  abortController: null,
 
   setApiKey(provider, key) {
     set((s) => ({
@@ -65,5 +68,15 @@ export const useAIStore = create<AIStoreType>()(subscribeWithSelector((set) => (
 
   setStreaming(isStreaming) {
     set({ isStreaming });
+  },
+
+  setAbortController(ctrl) {
+    set({ abortController: ctrl });
+  },
+
+  stopGeneration() {
+    const ctrl = get().abortController;
+    if (ctrl) ctrl.abort();
+    set({ isStreaming: false, abortController: null });
   },
 })));

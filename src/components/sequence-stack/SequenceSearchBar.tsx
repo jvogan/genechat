@@ -100,6 +100,7 @@ export default function SequenceSearchBar({ matchCount }: SequenceSearchBarProps
           opacity: matchCount > 0 ? 1 : 0.4,
         }}
         title="Previous match (Shift+Enter)"
+        aria-label="Previous match"
       >
         <ChevronUp size={14} />
       </button>
@@ -117,6 +118,7 @@ export default function SequenceSearchBar({ matchCount }: SequenceSearchBarProps
           opacity: matchCount > 0 ? 1 : 0.4,
         }}
         title="Next match (Enter)"
+        aria-label="Next match"
       >
         <ChevronDown size={14} />
       </button>
@@ -134,6 +136,7 @@ export default function SequenceSearchBar({ matchCount }: SequenceSearchBarProps
         onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-secondary)'; }}
         onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-muted)'; }}
         title="Close (Escape)"
+        aria-label="Close search"
       >
         <X size={14} />
       </button>

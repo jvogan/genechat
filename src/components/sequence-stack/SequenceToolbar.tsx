@@ -93,6 +93,7 @@ export default function SequenceToolbar({ onAction, sequenceType, selectedRange,
   return (
     <div style={{ padding: '6px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
       <button
+        data-testid="transform-dropdown"
         ref={btnRef}
         onClick={() => setOpen(v => !v)}
         style={{
@@ -163,6 +164,7 @@ export default function SequenceToolbar({ onAction, sequenceType, selectedRange,
             onMouseEnter={e => { e.currentTarget.style.color = 'var(--text-secondary)'; }}
             onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; }}
             title="Clear selection"
+            aria-label="Clear selection"
           >
             <X size={12} />
           </button>

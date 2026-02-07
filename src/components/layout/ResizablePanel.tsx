@@ -1,4 +1,4 @@
-import { useCallback, useRef, type ReactNode } from 'react';
+import { useCallback, useRef, useState, type ReactNode } from 'react';
 
 interface ResizablePanelProps {
   side: 'left' | 'right';
@@ -20,6 +20,7 @@ export default function ResizablePanel({
   children,
 }: ResizablePanelProps) {
   const dragging = useRef(false);
+  const [isDragging, setIsDragging] = useState(false);
   const startX = useRef(0);
   const startWidth = useRef(0);
 
@@ -27,6 +28,7 @@ export default function ResizablePanel({
     (e: React.MouseEvent) => {
       e.preventDefault();
       dragging.current = true;
+      setIsDragging(true);
       startX.current = e.clientX;
       startWidth.current = width;
 
@@ -41,6 +43,7 @@ export default function ResizablePanel({
 
       const onMouseUp = () => {
         dragging.current = false;
+        setIsDragging(false);
         document.removeEventListener('mousemove', onMouseMove);
         document.removeEventListener('mouseup', onMouseUp);
         document.body.style.cursor = '';
@@ -64,7 +67,7 @@ export default function ResizablePanel({
         width: open ? width : 0,
         minWidth: open ? width : 0,
         overflow: 'hidden',
-        transition: dragging.current ? 'none' : 'width 0.25s cubic-bezier(0.4,0,0.2,1), min-width 0.25s cubic-bezier(0.4,0,0.2,1)',
+        transition: isDragging ? 'none' : 'width 0.25s cubic-bezier(0.4,0,0.2,1), min-width 0.25s cubic-bezier(0.4,0,0.2,1)',
         background: 'var(--bg-primary)',
         borderLeft: side === 'right' ? '1px solid var(--border-subtle)' : undefined,
         borderRight: side === 'left' ? '1px solid var(--border-subtle)' : undefined,

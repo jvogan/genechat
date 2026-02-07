@@ -24,6 +24,8 @@ export function useFeatureLink(source: 'workspace' | 'map') {
   );
 
   // Whether this component should react to the current selection
+  // Intentional ref read to break feedback loop; always false during normal renders
+  /* eslint-disable react-hooks/refs */
   const isExternalSelection =
     selectedFeatureId !== null &&
     selectionSource !== null &&
@@ -35,4 +37,5 @@ export function useFeatureLink(source: 'workspace' | 'map') {
     isExternalSelection,
     selectFeature: handleSelect,
   };
+  /* eslint-enable react-hooks/refs */
 }

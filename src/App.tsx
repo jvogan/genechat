@@ -7,8 +7,10 @@ import { AIDrawer } from './components/ai-drawer/AIDrawer';
 import { useUIStore } from './store/ui-store';
 import { useSequenceStore } from './store/sequence-store';
 import { useProjectStore } from './store/project-store';
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon, HelpCircle } from 'lucide-react';
 import { useURLSync } from './hooks/useURLSync';
+import ShortcutLegend from './components/ShortcutLegend';
+import ErrorBoundary from './components/common/ErrorBoundary';
 import './index.css';
 
 function AutoSelectConversation() {
@@ -81,8 +83,39 @@ function ThemeToggle() {
         transition: 'color 0.15s ease',
       }}
       title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+      aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
     >
       {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+    </button>
+  );
+}
+
+function HelpButton() {
+  return (
+    <button
+      onClick={() => useUIStore.getState().toggleShortcutLegend()}
+      style={{
+        position: 'fixed',
+        bottom: 50,
+        right: 12,
+        zIndex: 50,
+        width: 32,
+        height: 32,
+        borderRadius: '50%',
+        background: 'var(--bg-secondary)',
+        border: '1px solid var(--border-subtle)',
+        color: 'var(--text-muted)',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        boxShadow: 'var(--shadow-sm)',
+        transition: 'color 0.15s ease',
+      }}
+      title="Keyboard shortcuts"
+      aria-label="Keyboard shortcuts"
+    >
+      <HelpCircle size={14} />
     </button>
   );
 }
@@ -94,11 +127,13 @@ export default function App() {
       <AutoSelectConversation />
       <AutoSelectBlock />
       <AppShell
-        sidebar={<Sidebar />}
-        center={<SequenceStack />}
-        aiDrawer={<AIDrawer />}
+        sidebar={<ErrorBoundary name="sidebar"><Sidebar /></ErrorBoundary>}
+        center={<ErrorBoundary name="center"><SequenceStack /></ErrorBoundary>}
+        aiDrawer={<ErrorBoundary name="ai-drawer"><AIDrawer /></ErrorBoundary>}
       />
+      <HelpButton />
       <ThemeToggle />
+      <ShortcutLegend />
     </ThemeProvider>
   );
 }

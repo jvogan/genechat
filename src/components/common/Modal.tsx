@@ -60,6 +60,8 @@ export default function Modal({ open, onClose, title, children }: ModalProps) {
           <h2 style={{ fontSize: 15, fontWeight: 600 }}>{title}</h2>
           <button
             onClick={onClose}
+            aria-label="Close dialog"
+            title="Close dialog"
             style={{
               background: 'none',
               border: 'none',
