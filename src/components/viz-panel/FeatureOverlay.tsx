@@ -30,16 +30,17 @@ export default function FeatureOverlay({ feature, x, y }: FeatureOverlayProps) {
     <div
       style={{
         position: 'absolute',
-        left: Math.min(x + 12, 280),
+        left: Math.min(x + 12, window.innerWidth - 280),
         top: Math.max(y - 10, 4),
         background: 'var(--bg-tertiary)',
         border: '1px solid var(--border)',
-        borderRadius: 'var(--radius-md)',
-        padding: '10px 14px',
+        borderRadius: 6,
+        padding: '8px 12px',
         pointerEvents: 'none',
         zIndex: 50,
         boxShadow: 'var(--shadow-md)',
         minWidth: 160,
+        maxWidth: 260,
         backdropFilter: 'blur(12px)',
         animation: 'fadeIn 0.12s ease-out',
       }}
@@ -97,6 +98,18 @@ export default function FeatureOverlay({ feature, x, y }: FeatureOverlayProps) {
 
         <span style={{ color: 'var(--text-muted)' }}>Strand</span>
         <span style={{ color: 'var(--text-secondary)' }}>{strandLabel}</span>
+      </div>
+
+      <div
+        style={{
+          marginTop: 6,
+          fontSize: 10,
+          fontStyle: 'italic',
+          color: 'var(--text-muted)',
+          fontFamily: 'var(--font-sans)',
+        }}
+      >
+        Click to select
       </div>
     </div>
   );

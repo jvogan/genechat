@@ -74,6 +74,8 @@ export function findRestrictionSites(
         recognitionSequence: enzyme.recognitionSequence,
         overhang: enzyme.overhang,
       });
+      // Lookahead matches are zero-length; advance lastIndex to avoid infinite loop
+      regex.lastIndex = match.index + 1;
     }
   }
 

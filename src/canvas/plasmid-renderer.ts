@@ -22,6 +22,7 @@ export interface PlasmidRenderOptions {
   hoveredFeature: string | null;
   selectedFeature: string | null;
   topology: 'linear' | 'circular';
+  sequenceName?: string;
 }
 
 interface ThemeColors {
@@ -72,16 +73,6 @@ function drawBackboneCircle(
   radius: number,
   colors: ThemeColors
 ) {
-  // Outer ring
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-  ctx.strokeStyle = colors.accent;
-  ctx.lineWidth = 2.5;
-  ctx.stroke();
-  ctx.restore();
-
-  // Inner backbone line
   ctx.beginPath();
   ctx.arc(cx, cy, radius, 0, Math.PI * 2);
   ctx.strokeStyle = colors.border;
@@ -99,9 +90,12 @@ function drawBPTicks(
   colors: ThemeColors
 ) {
   const interval = totalLength <= 5000 ? 500 : totalLength <= 20000 ? 1000 : 5000;
-  ctx.font = '10px system-ui, -apple-system, sans-serif';
+  ctx.font = '9px system-ui, -apple-system, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
+
+  ctx.save();
+  ctx.globalAlpha = 0.6;
 
   for (let bp = 0; bp < totalLength; bp += interval) {
     const angle = bpToAngle(bp, totalLength, rotation);
@@ -109,8 +103,8 @@ function drawBPTicks(
     const sinA = Math.sin(angle);
 
     // Tick mark
-    const innerR = radius - 6;
-    const outerR = radius + 6;
+    const innerR = radius - 5;
+    const outerR = radius + 5;
     ctx.beginPath();
     ctx.moveTo(cx + innerR * cosA, cy + innerR * sinA);
     ctx.lineTo(cx + outerR * cosA, cy + outerR * sinA);
@@ -134,6 +128,8 @@ function drawBPTicks(
     ctx.fillText(`${bp}`, 0, 0);
     ctx.restore();
   }
+
+  ctx.restore();
 }
 
 function drawFeatureArc(
@@ -151,24 +147,28 @@ function drawFeatureArc(
 ) {
   const startAngle = bpToAngle(feature.start, totalLength, rotation);
   const endAngle = bpToAngle(feature.end, totalLength, rotation);
-  const arcWidth = (isHovered || isSelected) ? 18 : 14;
+  const arcWidth = (isHovered || isSelected) ? 20 : 16;
   const arcRadius = radius + (feature.strand === 1 ? 0 : -arcWidth - 4);
   const featureColor = feature.color || colors.accent;
 
   ctx.save();
 
-  // Emphasis on hover/select (no glow)
-  if (isHovered || isSelected) {
-    // Just use opacity change, no shadow
-  }
+  // Subtle border stroke behind the main arc to create visual separation
+  ctx.beginPath();
+  ctx.arc(cx, cy, arcRadius, startAngle, endAngle);
+  ctx.lineWidth = arcWidth + 2;
+  ctx.strokeStyle = colors.bgPrimary;
+  ctx.lineCap = 'round';
+  ctx.globalAlpha = 0.4;
+  ctx.stroke();
 
-  // Draw the arc
+  // Draw the main arc
   ctx.beginPath();
   ctx.arc(cx, cy, arcRadius, startAngle, endAngle);
   ctx.lineWidth = arcWidth;
   ctx.strokeStyle = featureColor;
-  ctx.lineCap = 'butt';
-  ctx.globalAlpha = (isHovered || isSelected) ? 1 : 0.75;
+  ctx.lineCap = 'round';
+  ctx.globalAlpha = (isHovered || isSelected) ? 1 : 0.8;
   ctx.stroke();
 
   // Direction arrow at end
@@ -257,8 +257,8 @@ function drawRestrictionSites(
     const angle = bpToAngle(site.position, totalLength, rotation);
     const cosA = Math.cos(angle);
     const sinA = Math.sin(angle);
-    const innerR = radius - 24;
-    const outerR = radius + 24;
+    const innerR = radius - 20;
+    const outerR = radius + 20;
 
     ctx.beginPath();
     ctx.moveTo(cx + innerR * cosA, cy + innerR * sinA);
@@ -275,8 +275,7 @@ function drawRestrictionSites(
     const enzymeH = 12; // approximate line height for 9px font
     ctx.restore();
 
-    let placed = false;
-    for (const offset of [0, 20]) {
+    for (const offset of [0, 16, 32]) {
       const nameR = baseNameR + offset;
       const nameLabelX = cx + nameR * cosA;
       const nameLabelY = cy + nameR * sinA;
@@ -298,7 +297,6 @@ function drawRestrictionSites(
         ctx.fillText(site.enzyme, 0, 0);
         ctx.restore();
         usedRects.push(rect);
-        placed = true;
         break;
       }
     }
@@ -313,28 +311,33 @@ function drawCenterInfo(
   cy: number,
   totalLength: number,
   topology: string,
-  colors: ThemeColors
+  colors: ThemeColors,
+  sequenceName?: string
 ) {
-  // Subtle radial gradient behind text
-  const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 60);
-  grad.addColorStop(0, 'rgba(0,0,0,0.3)');
-  grad.addColorStop(1, 'rgba(0,0,0,0)');
-  ctx.fillStyle = grad;
-  ctx.beginPath();
-  ctx.arc(cx, cy, 60, 0, Math.PI * 2);
-  ctx.fill();
-
-  // BP count
-  ctx.font = 'bold 22px system-ui, -apple-system, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
+
+  // Sequence name (above bp count) if provided
+  let yOffset = 0;
+  if (sequenceName && sequenceName.length > 0) {
+    yOffset = -10;
+    const truncated = sequenceName.length > 15
+      ? sequenceName.slice(0, 14) + '\u2026'
+      : sequenceName;
+    ctx.font = '11px system-ui, -apple-system, sans-serif';
+    ctx.fillStyle = colors.textSecondary;
+    ctx.fillText(truncated, cx, cy - 20);
+  }
+
+  // BP count (monospace)
+  ctx.font = 'bold 20px "JetBrains Mono", "Fira Code", monospace';
   ctx.fillStyle = colors.textPrimary;
-  ctx.fillText(`${totalLength.toLocaleString()} bp`, cx, cy - 8);
+  ctx.fillText(`${totalLength.toLocaleString()} bp`, cx, cy + yOffset);
 
   // Topology label
-  ctx.font = '12px system-ui, -apple-system, sans-serif';
-  ctx.fillStyle = colors.accent;
-  ctx.fillText(topology.toUpperCase(), cx, cy + 14);
+  ctx.font = '10px system-ui, -apple-system, sans-serif';
+  ctx.fillStyle = colors.textMuted;
+  ctx.fillText(topology.toUpperCase(), cx, cy + yOffset + 18);
 }
 
 function drawOriginMarker(
@@ -348,19 +351,27 @@ function drawOriginMarker(
   const angle = bpToAngle(0, 1, rotation); // position 0
   const cosA = Math.cos(angle);
   const sinA = Math.sin(angle);
-  const markerX = cx + radius * cosA;
-  const markerY = cy + radius * sinA;
+
+  // Triangular notch pointing inward (6px wide, 4px deep)
+  const perpAngle = angle + Math.PI / 2;
+  const outerX = cx + radius * cosA;
+  const outerY = cy + radius * sinA;
+  const innerX = cx + (radius - 4) * cosA;
+  const innerY = cy + (radius - 4) * sinA;
 
   ctx.save();
   ctx.beginPath();
-  ctx.arc(markerX, markerY, 5, 0, Math.PI * 2);
-  ctx.fillStyle = colors.accent;
+  ctx.moveTo(outerX + 3 * Math.cos(perpAngle), outerY + 3 * Math.sin(perpAngle));
+  ctx.lineTo(innerX, innerY);
+  ctx.lineTo(outerX - 3 * Math.cos(perpAngle), outerY - 3 * Math.sin(perpAngle));
+  ctx.closePath();
+  ctx.fillStyle = colors.textMuted;
   ctx.fill();
   ctx.restore();
 }
 
 export function renderPlasmid(options: PlasmidRenderOptions): void {
-  const { canvas, features, restrictionSites, totalLength, rotation, hoveredFeature, selectedFeature, topology } = options;
+  const { canvas, features, restrictionSites, totalLength, rotation, hoveredFeature, selectedFeature, topology, sequenceName } = options;
   if (!canvas || totalLength <= 0) return;
 
   const rect = canvas.getBoundingClientRect();
@@ -397,7 +408,7 @@ export function renderPlasmid(options: PlasmidRenderOptions): void {
   }
 
   drawRestrictionSites(ctx, restrictionSites, cx, cy, radius, totalLength, rotation, colors, usedRects);
-  drawCenterInfo(ctx, cx, cy, totalLength, topology, colors);
+  drawCenterInfo(ctx, cx, cy, totalLength, topology, colors, sequenceName);
 }
 
 export function hitTestPlasmid(

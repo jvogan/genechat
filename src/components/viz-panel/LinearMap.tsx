@@ -1,8 +1,9 @@
 import { useRef, useEffect, useCallback, useState } from 'react';
 import { renderLinear, hitTestLinear } from '../../canvas/linear-renderer';
+import { renderBases, hitTestBases } from '../../canvas/base-renderer';
 import { attachCanvasInteraction, createInitialInteractionState } from '../../canvas/interaction';
 import type { CanvasInteractionState, InteractionEvent } from '../../canvas/interaction';
-import type { Feature, RestrictionSite } from '../../bio/types';
+import type { Feature, RestrictionSite, ORF } from '../../bio/types';
 import { useUIStore } from '../../store/ui-store';
 import FeatureOverlay from './FeatureOverlay';
 
@@ -10,6 +11,9 @@ interface LinearMapProps {
   features: Feature[];
   restrictionSites: RestrictionSite[];
   totalLength: number;
+  sequence: string;
+  orfs: ORF[];
+  fitToViewCounter?: number;
   onFeatureSelect?: (featureId: string | null) => void;
   onPositionHover?: (bp: number | null) => void;
   onRangeSelect?: (range: { start: number; end: number } | null) => void;
@@ -19,6 +23,9 @@ export default function LinearMap({
   features,
   restrictionSites,
   totalLength,
+  sequence,
+  orfs,
+  fitToViewCounter,
   onFeatureSelect,
   onPositionHover,
   onRangeSelect,
@@ -26,6 +33,7 @@ export default function LinearMap({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stateRef = useRef<CanvasInteractionState>(createInitialInteractionState(totalLength));
   const rafRef = useRef<number>(0);
+  const isBaseLevelRef = useRef(false);
   const [hoveredFeature, setHoveredFeature] = useState<Feature | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
 
@@ -38,6 +46,15 @@ export default function LinearMap({
       state.zoom = 1;
     }
   }, [totalLength]);
+
+  // Reset viewport when Fit button is clicked
+  useEffect(() => {
+    if (fitToViewCounter !== undefined && fitToViewCounter > 0 && totalLength > 0) {
+      const state = stateRef.current;
+      state.viewport = { start: 0, end: totalLength };
+      state.zoom = 1;
+    }
+  }, [fitToViewCounter, totalLength]);
 
   // Sync external feature selection (from workspace pills) into canvas state
   const selectedFeatureId = useUIStore((s) => s.selectedFeatureId);
@@ -103,17 +120,37 @@ export default function LinearMap({
       const rect = canvas.getBoundingClientRect();
       if (rect.width > 0 && rect.height > 0) {
         const state = stateRef.current;
-        renderLinear({
-          canvas,
-          features,
-          restrictionSites,
-          totalLength,
-          viewport: state.viewport,
-          zoom: state.zoom,
-          hoveredFeature: state.hoveredFeature,
-          selectedFeature: state.selectedFeature,
-          selectedRange: state.selectedRange,
-        });
+        const viewLen = state.viewport.end - state.viewport.start;
+
+        if (viewLen < 200 && sequence.length > 0) {
+          isBaseLevelRef.current = true;
+          renderBases({
+            canvas,
+            sequence,
+            orfs,
+            viewport: state.viewport,
+            zoom: state.zoom,
+            hoveredPosition: state.hoveredPosition,
+            selectedRange: state.selectedRange,
+            showComplement: true,
+            showAminoAcids: true,
+            features,
+            restrictionSites,
+          });
+        } else {
+          isBaseLevelRef.current = false;
+          renderLinear({
+            canvas,
+            features,
+            restrictionSites,
+            totalLength,
+            viewport: state.viewport,
+            zoom: state.zoom,
+            hoveredFeature: state.hoveredFeature,
+            selectedFeature: state.selectedFeature,
+            selectedRange: state.selectedRange,
+          });
+        }
       }
       rafRef.current = requestAnimationFrame(render);
     };
@@ -130,7 +167,7 @@ export default function LinearMap({
       cancelAnimationFrame(rafRef.current);
       observer.disconnect();
     };
-  }, [features, restrictionSites, totalLength]);
+  }, [features, restrictionSites, totalLength, sequence, orfs]);
 
   // Interaction handler
   useEffect(() => {
@@ -142,12 +179,18 @@ export default function LinearMap({
       mode: 'linear',
       totalLength,
       onInteraction: handleInteraction,
-      hitTest: (x, y) => hitTestLinear(x, y, canvas.getBoundingClientRect(), features, totalLength, stateRef.current.viewport),
+      hitTest: (x, y) => {
+        if (isBaseLevelRef.current) {
+          const result = hitTestBases(x, y, canvas.getBoundingClientRect(), sequence.length, stateRef.current.viewport);
+          return { featureId: null, bp: result.position ?? 0 };
+        }
+        return hitTestLinear(x, y, canvas.getBoundingClientRect(), features, totalLength, stateRef.current.viewport);
+      },
       getState: () => stateRef.current,
     });
 
     return cleanup;
-  }, [features, totalLength, handleInteraction]);
+  }, [features, totalLength, sequence, handleInteraction]);
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>

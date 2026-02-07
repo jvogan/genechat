@@ -254,6 +254,8 @@ export default function ProjectList({
                     boxShadow: 'var(--shadow-md)',
                     padding: '4px 0',
                     minWidth: 140,
+                    animation: 'menuFadeIn 0.15s ease',
+                    transformOrigin: 'top right',
                   }}
                 >
                   <button

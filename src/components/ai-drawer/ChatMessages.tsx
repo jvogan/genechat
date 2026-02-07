@@ -89,7 +89,9 @@ export function ChatMessages() {
                       }),
               }}
             >
-              {msg.content || (isStreaming && msg.role === 'assistant' ? (
+              {msg.content ? (
+                <MessageContent content={msg.content} role={msg.role} />
+              ) : (isStreaming && msg.role === 'assistant' ? (
                 <span style={{ color: 'var(--text-muted)' }}>
                   <TypingDots />
                 </span>
@@ -100,6 +102,67 @@ export function ChatMessages() {
       })}
     </div>
   );
+}
+
+function MessageContent({ content, role }: { content: string; role: string }) {
+  if (role !== 'assistant') return <>{content}</>;
+
+  // Split content into text and action result lines
+  const lines = content.split('\n');
+  const elements: React.ReactNode[] = [];
+  let textBuffer: string[] = [];
+
+  const flushText = () => {
+    if (textBuffer.length > 0) {
+      elements.push(<span key={`t${elements.length}`}>{textBuffer.join('\n')}</span>);
+      textBuffer = [];
+    }
+  };
+
+  for (const line of lines) {
+    if (line.startsWith('\u2713 ')) {
+      flushText();
+      elements.push(
+        <div
+          key={`a${elements.length}`}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '3px 0',
+            fontSize: 11,
+            fontWeight: 500,
+            color: '#4ade80',
+          }}
+        >
+          {line}
+        </div>,
+      );
+    } else if (line.startsWith('\u2717 ')) {
+      flushText();
+      elements.push(
+        <div
+          key={`a${elements.length}`}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '3px 0',
+            fontSize: 11,
+            fontWeight: 500,
+            color: '#f87171',
+          }}
+        >
+          {line}
+        </div>,
+      );
+    } else {
+      textBuffer.push(line);
+    }
+  }
+  flushText();
+
+  return <>{elements}</>;
 }
 
 function TypingDots() {

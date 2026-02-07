@@ -2,7 +2,9 @@ import { useState, useMemo, useCallback } from 'react';
 import { Plus, Dna, FolderPlus } from 'lucide-react';
 import ConversationList, { type ConversationItem } from './ConversationList';
 import ProjectList from './ProjectList';
+import SearchBar from './SearchBar';
 import { useProjectStore } from '../../store/project-store';
+import { useSequenceStore } from '../../store/sequence-store';
 import { useUIStore } from '../../store/ui-store';
 
 export default function Sidebar() {
@@ -16,11 +18,33 @@ export default function Sidebar() {
   const deleteConversation = useProjectStore((s) => s.deleteConversation);
   const getProjectConversations = useProjectStore((s) => s.getProjectConversations);
   const searchQuery = useUIStore((s) => s.searchQuery);
+  const setSearchQuery = useUIStore((s) => s.setSearchQuery);
   const activeConversationId = useUIStore((s) => s.activeConversationId);
   const setActiveConversation = useUIStore((s) => s.setActiveConversation);
+  const allBlocks = useSequenceStore((s) => s.blocks);
 
   const [creatingProject, setCreatingProject] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
+
+  // Enhanced search: match conversation titles, block names, and feature names
+  const conversationIdsWithBlockMatch = useMemo(() => {
+    if (!searchQuery) return new Set<string>();
+    const q = searchQuery.toLowerCase();
+    const ids = new Set<string>();
+    for (const block of allBlocks) {
+      if (block.name.toLowerCase().includes(q)) {
+        ids.add(block.conversationId);
+        continue;
+      }
+      for (const f of block.features) {
+        if (f.name.toLowerCase().includes(q)) {
+          ids.add(block.conversationId);
+          break;
+        }
+      }
+    }
+    return ids;
+  }, [allBlocks, searchQuery]);
 
   const ungroupedItems: ConversationItem[] = useMemo(() => {
     const items = conversations
@@ -28,21 +52,26 @@ export default function Sidebar() {
       .map((c) => ({ id: c.id, title: c.title }));
     if (!searchQuery) return items;
     const q = searchQuery.toLowerCase();
-    return items.filter((c) => c.title.toLowerCase().includes(q));
-  }, [conversations, searchQuery]);
+    return items.filter((c) =>
+      c.title.toLowerCase().includes(q) || conversationIdsWithBlockMatch.has(c.id)
+    );
+  }, [conversations, searchQuery, conversationIdsWithBlockMatch]);
 
   const projectItems = useMemo(
     () =>
-      projects.map((p) => ({
-        id: p.id,
-        name: p.name,
-        color: p.color,
-        conversations: getProjectConversations(p.id).map((c) => ({
+      projects.map((p) => {
+        const convs = getProjectConversations(p.id).map((c) => ({
           id: c.id,
           title: c.title,
-        })),
-      })),
-    [projects, getProjectConversations],
+        }));
+        if (!searchQuery) return { id: p.id, name: p.name, color: p.color, conversations: convs };
+        const q = searchQuery.toLowerCase();
+        const filtered = convs.filter((c) =>
+          c.title.toLowerCase().includes(q) || conversationIdsWithBlockMatch.has(c.id)
+        );
+        return { id: p.id, name: p.name, color: p.color, conversations: filtered };
+      }),
+    [projects, getProjectConversations, searchQuery, conversationIdsWithBlockMatch],
   );
 
   const projectInfoForMenu = useMemo(
@@ -181,6 +210,9 @@ export default function Sidebar() {
           />
         )}
       </div>
+
+      {/* Search */}
+      <SearchBar value={searchQuery} onChange={setSearchQuery} />
 
       {/* Scrollable area */}
       <div style={{ flex: 1, overflow: 'auto', padding: '0 6px' }}>

@@ -23,10 +23,15 @@ export type ManipulationType =
   | 'reverse_complement'
   | 'translate'
   | 'reverse_translate'
+  | 'reverse_translate_rna'
   | 'codon_optimize'
   | 'mutate'
   | 'annotate'
-  | 'auto_annotate';
+  | 'auto_annotate'
+  | 'restriction_digest'
+  | 'ligate'
+  | 'design_primers'
+  | 'extract';
 
 export interface Sequence {
   id: string;

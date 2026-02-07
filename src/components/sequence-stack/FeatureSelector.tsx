@@ -1,10 +1,13 @@
 import { useState } from 'react';
+import { Pencil, X } from 'lucide-react';
 import type { Feature } from '../../bio/types';
 import { useUIStore } from '../../store/ui-store';
 
 interface FeatureSelectorProps {
   features: Feature[];
   onSelect?: (feature: Feature) => void;
+  onEdit?: (feature: Feature) => void;
+  onRemove?: (featureId: string) => void;
   maxVisible?: number;
 }
 
@@ -23,7 +26,7 @@ const featureTypeColors: Record<string, string> = {
   custom: 'var(--accent)',
 };
 
-export default function FeatureSelector({ features, onSelect, maxVisible = 5 }: FeatureSelectorProps) {
+export default function FeatureSelector({ features, onSelect, onEdit, onRemove, maxVisible = 5 }: FeatureSelectorProps) {
   const selectedFeatureId = useUIStore((s) => s.selectedFeatureId);
   const selectFeature = useUIStore((s) => s.selectFeature);
   const [expanded, setExpanded] = useState(false);
@@ -68,6 +71,24 @@ export default function FeatureSelector({ features, onSelect, maxVisible = 5 }: 
             <span style={{ color: 'var(--text-muted)', fontSize: 9 }}>
               {f.start + 1}..{f.end}
             </span>
+            {active && onEdit && (
+              <span
+                onClick={(e) => { e.stopPropagation(); onEdit(f); }}
+                style={{ cursor: 'pointer', display: 'flex', marginLeft: 2 }}
+                title="Edit feature"
+              >
+                <Pencil size={9} />
+              </span>
+            )}
+            {active && onRemove && (
+              <span
+                onClick={(e) => { e.stopPropagation(); onRemove(f.id); }}
+                style={{ cursor: 'pointer', display: 'flex', color: 'var(--rose)', marginLeft: 1 }}
+                title="Remove feature"
+              >
+                <X size={9} />
+              </span>
+            )}
           </button>
         );
       })}

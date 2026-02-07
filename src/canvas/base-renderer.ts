@@ -1,4 +1,4 @@
-import type { ORF } from '../bio/types';
+import type { ORF, Feature, RestrictionSite } from '../bio/types';
 import { BASE_COLORS } from '../bio/types';
 
 export interface BaseRenderOptions {
@@ -11,6 +11,8 @@ export interface BaseRenderOptions {
   selectedRange: { start: number; end: number } | null;
   showComplement: boolean;
   showAminoAcids: boolean;
+  features?: Feature[];
+  restrictionSites?: RestrictionSite[];
 }
 
 interface ThemeColors {
@@ -118,8 +120,120 @@ function drawORFTracks(
   return orfs.length > 0 ? Math.min(orfs.length, 6) * (trackH + trackGap) + 6 : 0;
 }
 
+type LabelRect = { x: number; y: number; w: number; h: number };
+
+function rectsOverlap(a: LabelRect, b: LabelRect): boolean {
+  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+}
+
+function canPlaceRect(rect: LabelRect, used: LabelRect[]): boolean {
+  for (const u of used) {
+    if (rectsOverlap(rect, u)) return false;
+  }
+  return true;
+}
+
+function drawFeatureBars(
+  ctx: CanvasRenderingContext2D,
+  features: Feature[],
+  viewport: { start: number; end: number },
+  marginLeft: number,
+  y: number,
+  charW: number,
+): number {
+  const barH = 6;
+  const gap = 2;
+  const visible = features.filter(f => f.end > viewport.start && f.start < viewport.end);
+  if (visible.length === 0) return 0;
+
+  for (let i = 0; i < visible.length; i++) {
+    const feat = visible[i];
+    const x1 = marginLeft + (Math.max(feat.start, viewport.start) - viewport.start) * charW;
+    const x2 = marginLeft + (Math.min(feat.end, viewport.end) - viewport.start) * charW;
+    const barY = y + i * (barH + gap);
+    const barW = Math.max(x2 - x1, 2);
+
+    ctx.save();
+    ctx.globalAlpha = 0.4;
+    ctx.fillStyle = feat.color || '#00d4aa';
+    ctx.beginPath();
+    ctx.roundRect(x1, barY, barW, barH, 3);
+    ctx.fill();
+    ctx.restore();
+
+    // Feature name if bar is wide enough
+    if (barW > 40) {
+      ctx.save();
+      ctx.font = '8px system-ui, -apple-system, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = feat.color || '#00d4aa';
+      ctx.globalAlpha = 0.8;
+      let label = feat.name;
+      const maxW = barW - 6;
+      while (ctx.measureText(label + '\u2026').width > maxW && label.length > 1) {
+        label = label.slice(0, -1);
+      }
+      if (label !== feat.name) label += '\u2026';
+      ctx.fillText(label, x1 + 3, barY + barH / 2);
+      ctx.restore();
+    }
+  }
+
+  return visible.length * (barH + gap) + 4;
+}
+
+function drawRestrictionSiteMarkers(
+  ctx: CanvasRenderingContext2D,
+  sites: RestrictionSite[],
+  viewport: { start: number; end: number },
+  marginLeft: number,
+  y: number,
+  charW: number,
+  colors: ThemeColors,
+) {
+  const usedRects: LabelRect[] = [];
+  const triH = 5;
+
+  for (const site of sites) {
+    if (site.position < viewport.start || site.position > viewport.end) continue;
+    const x = marginLeft + (site.position - viewport.start) * charW + charW / 2;
+
+    // Downward-pointing triangle
+    ctx.save();
+    ctx.fillStyle = colors.textMuted;
+    ctx.globalAlpha = 0.6;
+    ctx.beginPath();
+    ctx.moveTo(x - triH / 2, y);
+    ctx.lineTo(x + triH / 2, y);
+    ctx.lineTo(x, y + triH);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // Enzyme name with collision detection
+    ctx.save();
+    ctx.font = '8px system-ui, -apple-system, sans-serif';
+    const labelW = ctx.measureText(site.enzyme).width;
+    const labelH = 10;
+    const labelX = x - labelW / 2;
+    const labelY = y + triH + 2;
+    const rect: LabelRect = { x: labelX, y: labelY, w: labelW, h: labelH };
+
+    if (canPlaceRect(rect, usedRects)) {
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillStyle = colors.textMuted;
+      ctx.globalAlpha = 0.6;
+      ctx.fillText(site.enzyme, x, labelY);
+      usedRects.push(rect);
+    }
+    ctx.restore();
+  }
+}
+
 export function renderBases(options: BaseRenderOptions): void {
-  const { canvas, sequence, orfs, viewport, hoveredPosition, selectedRange, showComplement, showAminoAcids } = options;
+  const { canvas, sequence, orfs, viewport, hoveredPosition, selectedRange, showComplement, showAminoAcids, features, restrictionSites } = options;
   if (!canvas || sequence.length === 0) return;
 
   const rect = canvas.getBoundingClientRect();
@@ -145,6 +259,12 @@ export function renderBases(options: BaseRenderOptions): void {
   let currentY = 8;
   const orfHeight = drawORFTracks(ctx, orfs, viewport, w, marginLeft, currentY, charW, colors);
   currentY += orfHeight;
+
+  // Feature annotation bars
+  if (features && features.length > 0) {
+    const featHeight = drawFeatureBars(ctx, features, viewport, marginLeft, currentY, charW);
+    currentY += featHeight;
+  }
 
   // Selection highlight
   if (selectedRange) {
@@ -276,6 +396,12 @@ export function renderBases(options: BaseRenderOptions): void {
       }
     }
     ctx.globalAlpha = 1;
+    currentY += 14;
+  }
+
+  // Restriction site markers
+  if (restrictionSites && restrictionSites.length > 0) {
+    drawRestrictionSiteMarkers(ctx, restrictionSites, viewport, marginLeft, currentY, charW, colors);
   }
 }
 

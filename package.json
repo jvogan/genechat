@@ -1,13 +1,33 @@
 {
   "name": "genechat",
-  "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
+  "description": "A desktop-class bioinformatics workbench for DNA/RNA/protein sequence analysis",
+  "license": "MIT",
+  "author": "Jacob Vogan",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jvogan/genechat.git"
+  },
+  "homepage": "https://github.com/jvogan/genechat",
+  "keywords": [
+    "bioinformatics",
+    "dna",
+    "rna",
+    "protein",
+    "sequence-analysis",
+    "molecular-biology",
+    "restriction-digest",
+    "primer-design",
+    "genbank",
+    "fasta"
+  ],
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.18",
@@ -30,6 +50,7 @@
     "globals": "^16.5.0",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",
-    "vite": "^7.2.4"
+    "vite": "^7.2.4",
+    "vitest": "^4.0.18"
   }
 }

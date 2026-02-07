@@ -4,6 +4,8 @@ import { useSequenceStore } from '../store/sequence-store';
 import { useUIStore } from '../store/ui-store';
 import { providerRegistry } from '../ai/provider-registry';
 import { buildSystemContext } from '../ai/context-builder';
+import { parseActions, stripActionBlocks } from '../ai/action-parser';
+import { executeActions } from '../ai/action-executor';
 import type { AIMessage } from '../ai/types';
 
 export function useAIChat() {
@@ -54,7 +56,13 @@ export function useAIChat() {
       const blocks = activeConversationId
         ? getConversationBlocks(activeConversationId)
         : [];
-      const systemMessage = buildSystemContext(blocks);
+      const uiState = useUIStore.getState();
+      const activeBlock = blocks.find((b) => b.id === uiState.activeSequenceBlockId);
+      const systemMessage = buildSystemContext(blocks, {
+        selectedRange: uiState.selectedRange,
+        activeBlockId: uiState.activeSequenceBlockId,
+        activeBlockName: activeBlock?.name ?? null,
+      });
 
       // Build message history
       const history: AIMessage[] = [
@@ -88,6 +96,17 @@ export function useAIChat() {
             }
           },
         );
+
+        // Parse and execute workspace actions from the response
+        const actions = parseActions(accumulated);
+        if (actions.length > 0 && activeConversationId) {
+          const results = executeActions(actions, activeConversationId);
+          const cleanText = stripActionBlocks(accumulated);
+          const summary = results
+            .map((r) => (r.success ? `\u2713 ${r.description}` : `\u2717 ${r.error || r.description}`))
+            .join('\n');
+          updateLastAssistantMessage(cleanText + '\n\n' + summary);
+        }
       } catch (err) {
         const errorMsg =
           err instanceof Error ? err.message : 'Unknown error occurred';
