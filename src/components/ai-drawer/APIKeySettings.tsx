@@ -18,6 +18,8 @@ const PROVIDERS: { name: AIProviderName; label: string; placeholder: string }[] 
 export function APIKeySettings({ onClose }: APIKeySettingsProps) {
   const apiKeys = useAIStore((s) => s.apiKeys);
   const setApiKey = useAIStore((s) => s.setApiKey);
+  const persistApiKeys = useAIStore((s) => s.persistApiKeys);
+  const setPersistApiKeys = useAIStore((s) => s.setPersistApiKeys);
   const [visible, setVisible] = useState<Record<string, boolean>>({});
   const [testing, setTesting] = useState<Record<string, 'idle' | 'testing' | 'ok' | 'fail'>>({});
 
@@ -86,9 +88,45 @@ export function APIKeySettings({ onClose }: APIKeySettingsProps) {
           </button>
         </div>
 
-        <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>
-          Enter your API keys to enable AI chat. Keys are stored locally in your browser.
-        </p>
+        <div
+          style={{
+            border: '1px solid rgba(248,113,113,0.35)',
+            background: 'rgba(248,113,113,0.08)',
+            borderRadius: 10,
+            padding: 10,
+            marginBottom: 12,
+          }}
+        >
+          <p style={{ fontSize: 12, color: '#fca5a5', margin: 0 }}>
+            BYOK security note: browser-stored keys can be exposed by malicious extensions, injected scripts, or
+            compromised devices. Use low-scope keys and rotate regularly.
+          </p>
+        </div>
+
+        <label
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            fontSize: 12,
+            color: 'var(--text-secondary)',
+            marginBottom: 16,
+            cursor: 'pointer',
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={persistApiKeys}
+            onChange={(e) => setPersistApiKeys(e.target.checked)}
+          />
+          Remember API keys on this browser (stored in IndexedDB)
+        </label>
+
+        {!persistApiKeys && (
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>
+            Session-only mode is enabled. Keys will be cleared on refresh and are not persisted.
+          </p>
+        )}
 
         {PROVIDERS.map(({ name, label, placeholder }) => {
           const status = testing[name] || 'idle';

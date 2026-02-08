@@ -55,7 +55,9 @@ Click the key icon in the AI drawer to configure a provider. Get an API key from
 - [Google (Gemini)](https://aistudio.google.com/apikey)
 - [Moonshot (Kimi)](https://platform.moonshot.cn/)
 
-> **Your keys never leave your browser.** They are stored in IndexedDB on your machine — no server, no `.env` file, nothing to accidentally commit. GeneChat has no backend and sends API requests directly from your browser to the provider.
+> **Your keys never leave your browser before reaching the AI provider you chose.** GeneChat has no backend and sends API requests directly from your browser to that provider.
+>
+> By default, keys are stored in IndexedDB on your machine for convenience. You can disable key persistence in API Key Settings to use session-only mode (keys cleared on refresh).
 
 <p align="center"><img src="docs/assets/ai-chat.png" width="720" alt="AI assistant" /></p>
 

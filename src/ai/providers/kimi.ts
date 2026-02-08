@@ -1,5 +1,8 @@
 import type { AIProvider, AIProviderConfig, AIMessage, AIStreamChunk } from '../types';
 
+const KIMI_CHAT_URL = 'https://api.moonshot.cn/v1/chat/completions';
+const KIMI_MODELS_URL = 'https://api.moonshot.cn/v1/models';
+
 export const kimiProvider: AIProvider = {
   name: 'kimi',
 
@@ -11,22 +14,19 @@ export const kimiProvider: AIProvider = {
   ): Promise<string> {
     let fullContent = '';
     try {
-      const response = await fetch(
-        config.baseUrl || 'https://api.moonshot.cn/v1/chat/completions',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${config.apiKey}`,
-          },
-          body: JSON.stringify({
-            model: config.model,
-            stream: true,
-            messages: messages.map((m) => ({ role: m.role, content: m.content })),
-          }),
-          signal,
+      const response = await fetch(KIMI_CHAT_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${config.apiKey}`,
         },
-      );
+        body: JSON.stringify({
+          model: config.model,
+          stream: true,
+          messages: messages.map((m) => ({ role: m.role, content: m.content })),
+        }),
+        signal,
+      });
 
       if (!response.ok) {
         const err = await response.text();
@@ -81,12 +81,9 @@ export const kimiProvider: AIProvider = {
 
   async validateKey(config: AIProviderConfig): Promise<boolean> {
     try {
-      const response = await fetch(
-        config.baseUrl || 'https://api.moonshot.cn/v1/models',
-        {
-          headers: { Authorization: `Bearer ${config.apiKey}` },
-        },
-      );
+      const response = await fetch(KIMI_MODELS_URL, {
+        headers: { Authorization: `Bearer ${config.apiKey}` },
+      });
       return response.ok;
     } catch {
       return false;

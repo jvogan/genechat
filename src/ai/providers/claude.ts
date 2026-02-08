@@ -1,5 +1,7 @@
 import type { AIProvider, AIProviderConfig, AIMessage, AIStreamChunk } from '../types';
 
+const CLAUDE_MESSAGES_URL = 'https://api.anthropic.com/v1/messages';
+
 function toClaudeMessages(messages: AIMessage[]) {
   return messages
     .filter((m) => m.role !== 'system')
@@ -33,7 +35,7 @@ export const claudeProvider: AIProvider = {
 
     let fullContent = '';
     try {
-      const response = await fetch(config.baseUrl || 'https://api.anthropic.com/v1/messages', {
+      const response = await fetch(CLAUDE_MESSAGES_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -97,7 +99,7 @@ export const claudeProvider: AIProvider = {
 
   async validateKey(config: AIProviderConfig): Promise<boolean> {
     try {
-      const response = await fetch(config.baseUrl || 'https://api.anthropic.com/v1/messages', {
+      const response = await fetch(CLAUDE_MESSAGES_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

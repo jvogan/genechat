@@ -4,7 +4,6 @@
 export interface AIProviderConfig {
   apiKey: string;
   model: string;
-  baseUrl?: string;
 }
 
 export interface AIMessage {

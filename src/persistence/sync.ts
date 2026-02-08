@@ -9,13 +9,14 @@ import type { AIProviderName } from '../store/types';
 // Hydrate stores from IndexedDB on app load
 export async function hydrate(): Promise<void> {
   try {
-    const [projects, conversations, blocks, themeRow, apiKeysRow] =
+    const [projects, conversations, blocks, themeRow, apiKeysRow, persistKeysRow] =
       await Promise.all([
         db.projects.toArray(),
         db.conversations.toArray(),
         db.sequenceBlocks.toArray(),
         db.settings.get('theme'),
         db.settings.get('apiKeys'),
+        db.settings.get('persistApiKeys'),
       ]);
 
     if (projects.length > 0 || conversations.length > 0) {
@@ -35,10 +36,16 @@ export async function hydrate(): Promise<void> {
       useUIStore.setState({ theme: themeRow.value as 'light' | 'dark' });
     }
 
-    if (apiKeysRow?.value) {
+    const persistApiKeys =
+      typeof persistKeysRow?.value === 'boolean' ? persistKeysRow.value : true;
+    useAIStore.setState({ persistApiKeys });
+
+    if (persistApiKeys && apiKeysRow?.value) {
       useAIStore.setState({
         apiKeys: apiKeysRow.value as Record<AIProviderName, string>,
       });
+    } else if (!persistApiKeys && apiKeysRow?.value) {
+      await db.settings.delete('apiKeys');
     }
 
     // If DB was empty but stores have default data, persist it now
@@ -128,9 +135,36 @@ export function startSync(): () => void {
         clearTimeout(keyTimer);
         keyTimer = setTimeout(async () => {
           try {
-            await db.settings.put({ key: 'apiKeys', value: apiKeys });
+            if (useAIStore.getState().persistApiKeys) {
+              await db.settings.put({ key: 'apiKeys', value: apiKeys });
+            }
           } catch (err) {
             console.warn('Failed to sync API keys:', err);
+          }
+        }, 300);
+      },
+    ),
+  );
+
+  let keyModeTimer: ReturnType<typeof setTimeout>;
+  unsubs.push(
+    useAIStore.subscribe(
+      (state) => state.persistApiKeys,
+      (persistApiKeys) => {
+        clearTimeout(keyModeTimer);
+        keyModeTimer = setTimeout(async () => {
+          try {
+            await db.settings.put({ key: 'persistApiKeys', value: persistApiKeys });
+            if (persistApiKeys) {
+              await db.settings.put({
+                key: 'apiKeys',
+                value: useAIStore.getState().apiKeys,
+              });
+            } else {
+              await db.settings.delete('apiKeys');
+            }
+          } catch (err) {
+            console.warn('Failed to sync API key storage mode:', err);
           }
         }, 300);
       },
@@ -160,6 +194,7 @@ export function startSync(): () => void {
     clearTimeout(seqTimer);
     clearTimeout(uiTimer);
     clearTimeout(keyTimer);
+    clearTimeout(keyModeTimer);
     clearTimeout(checkpointTimer);
   };
 }

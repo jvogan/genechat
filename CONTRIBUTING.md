@@ -24,6 +24,26 @@ Please [open an issue](https://github.com/jvogan/genechat/issues/new?template=bu
 5. Run `npm run test` and `npm run test:e2e` to verify nothing is broken.
 6. Open a pull request with a clear description of the change.
 
+## Secret Scanning
+
+All PRs run automated secret scanning in CI. Run the same check locally before pushing:
+
+```bash
+# macOS: brew install gitleaks
+gitleaks detect --source . --no-git
+```
+
+Optional pre-commit hook:
+
+```bash
+cat > .git/hooks/pre-commit <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+gitleaks detect --source . --no-git
+EOF
+chmod +x .git/hooks/pre-commit
+```
+
 ## Development Setup
 
 Requires [Node.js](https://nodejs.org/) 18 or later.

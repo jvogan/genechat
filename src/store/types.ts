@@ -157,6 +157,7 @@ export interface AIState {
   activeProvider: AIProviderName;
   activeModel: string;
   apiKeys: Record<AIProviderName, string>;
+  persistApiKeys: boolean;
   chatMessages: ChatMessage[];
   isStreaming: boolean;
 }

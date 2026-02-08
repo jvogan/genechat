@@ -1,5 +1,7 @@
 import type { AIProvider, AIProviderConfig, AIMessage, AIStreamChunk } from '../types';
 
+const GEMINI_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta';
+
 function toGeminiContents(messages: AIMessage[]) {
   return messages
     .filter((m) => m.role !== 'system')
@@ -24,9 +26,7 @@ export const geminiProvider: AIProvider = {
     onChunk: (chunk: AIStreamChunk) => void,
     signal?: AbortSignal,
   ): Promise<string> {
-    const baseUrl =
-      config.baseUrl || 'https://generativelanguage.googleapis.com/v1beta';
-    const url = `${baseUrl}/models/${config.model}:streamGenerateContent?alt=sse&key=${config.apiKey}`;
+    const url = `${GEMINI_BASE_URL}/models/${config.model}:streamGenerateContent?alt=sse`;
 
     const body: Record<string, unknown> = {
       contents: toGeminiContents(messages),
@@ -40,7 +40,10 @@ export const geminiProvider: AIProvider = {
     try {
       const response = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': config.apiKey,
+        },
         body: JSON.stringify(body),
         signal,
       });
@@ -94,11 +97,9 @@ export const geminiProvider: AIProvider = {
 
   async validateKey(config: AIProviderConfig): Promise<boolean> {
     try {
-      const baseUrl =
-        config.baseUrl || 'https://generativelanguage.googleapis.com/v1beta';
-      const response = await fetch(
-        `${baseUrl}/models?key=${config.apiKey}`,
-      );
+      const response = await fetch(`${GEMINI_BASE_URL}/models`, {
+        headers: { 'x-goog-api-key': config.apiKey },
+      });
       return response.ok;
     } catch {
       return false;

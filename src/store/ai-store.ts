@@ -4,6 +4,7 @@ import type { AIState, AIProviderName, ChatMessage } from './types';
 
 interface AIActions {
   setApiKey(provider: AIProviderName, key: string): void;
+  setPersistApiKeys(persist: boolean): void;
   setActiveModel(provider: AIProviderName, modelId: string): void;
   addMessage(message: Omit<ChatMessage, 'id' | 'timestamp'>): void;
   updateLastAssistantMessage(content: string): void;
@@ -24,6 +25,7 @@ export const useAIStore = create<AIStoreType>()(subscribeWithSelector((set, get)
     gemini: '',
     kimi: '',
   },
+  persistApiKeys: true,
   chatMessages: [],
   isStreaming: false,
   abortController: null,
@@ -32,6 +34,10 @@ export const useAIStore = create<AIStoreType>()(subscribeWithSelector((set, get)
     set((s) => ({
       apiKeys: { ...s.apiKeys, [provider]: key },
     }));
+  },
+
+  setPersistApiKeys(persist) {
+    set({ persistApiKeys: persist });
   },
 
   setActiveModel(provider, modelId) {
