@@ -23,10 +23,7 @@ Only the latest `main` branch is actively maintained.
 
 ## Reporting a Vulnerability
 
-If you discover a security issue, please report it responsibly:
-
-- **Email:** security@genechat.dev
-- **GitHub Security Advisories:** Use the "Report a vulnerability" button on the repository's Security tab
+If you discover a security issue, please report it responsibly via **[GitHub Security Advisories](https://github.com/jvogan/genechat/security/advisories/new)** (the "Report a vulnerability" button on the repository's Security tab).
 
 Please do **not** open a public issue for security vulnerabilities.
 
