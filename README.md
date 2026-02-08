@@ -11,6 +11,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT" /></a>
   <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white" alt="TypeScript" /></a>
   <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" alt="React" /></a>
+  <img src="https://img.shields.io/badge/100%25_Client--Side-no_server-2ea44f" alt="100% Client-Side" />
 </p>
 
 GeneChat is an open-source sequence analysis tool that runs entirely in your browser. Import GenBank or FASTA files, design primers, run restriction digests, ligate fragments, align sequences, and annotate features — all without sending data to a server. An optional AI assistant (bring your own API key) understands your workspace and can create or modify sequences on your behalf.
